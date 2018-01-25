@@ -10,13 +10,13 @@
 name=Geological Data Processing
 qgisMinimumVersion=2.0
 description=This plugin connects the python module 'GeologicalToolbox' to QGIS.
-version=0.1
+version=0.0.1a
 author=Stephan Donndorf
 email=stephan@donndorf.info
 
 about=This plugin uses the python module GeologicalToolbox to import, process and export geological data. The plugin can export data to Midland Valley's Move and Paradigms SKUA-GOCAD.
 
-tracker=https://github.com/stdonn
+tracker=https://github.com/stdonn/GeologicalDataProcessing/issues
 repository=https://github.com/stdonn/GeologicalDataProcessing
 # End of mandatory metadata
 
@@ -26,7 +26,7 @@ repository=https://github.com/stdonn/GeologicalDataProcessing
 # changelog=
 
 # Tags are comma separated with spaces allowed
-tags=geology, database, export, geocoding, geometry, import, point, polygon, line, well
+tags=geology, database, export, geocoding, geometry, import, point, polygon, line, well, python
 
 homepage=https://github.com/stdonn/GeologicalDataProcessing
 category=Plugins
