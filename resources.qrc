@@ -1,5 +1,9 @@
 <RCC>
-    <qresource prefix="/plugins/GeologicalDataProcessing" >
-        <file>icon.png</file>
-    </qresource>
+  <qresource prefix="newPrefix">
+    <file>images/ic_swap_calls_48px.svg</file>
+    <file>images/DB.svg</file>
+    <file>images/ic_file_download_48px.svg</file>
+    <file>images/ic_file_upload_48px.svg</file>
+    <file>images/ic_graphic_eq_48px.svg</file>
+  </qresource>
 </RCC>
