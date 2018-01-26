@@ -30,7 +30,7 @@ tags=geology, database, export, geocoding, geometry, import, point, polygon, lin
 
 homepage=https://github.com/stdonn/GeologicalDataProcessing
 category=Plugins
-icon=images/DB.svg
+icon=icon.png
 # experimental flag
 experimental=True
 
