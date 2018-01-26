@@ -210,7 +210,7 @@ venv3/
 [Ll]ib64
 [Ll]ocal
 [Mm]an
-[Ss]cripts
+# [Ss]cripts
 [Tt]cl
 pyvenv.cfg
 pip-selfcheck.json
