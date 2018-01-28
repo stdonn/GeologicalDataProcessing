@@ -23,7 +23,7 @@
 from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt
 from PyQt4.QtGui import QAction, QIcon
 # Initialize Qt resources from file resources.py
-import resources
+import resources_rc
 
 # Import the code for the DockWidget
 from geological_data_processing_dockwidget import GeologicalDataProcessingDockWidget

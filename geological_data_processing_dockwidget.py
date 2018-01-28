@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# -*- coding: UTF-8 -*-
 """
 /***************************************************************************
  GeologicalDataProcessingDockWidget
@@ -26,11 +26,13 @@ import os
 from PyQt4 import QtGui, uic
 from PyQt4.QtCore import pyqtSignal
 
-FORM_CLASS, _ = uic.loadUiType(os.path.join(
-    os.path.dirname(__file__), 'geological_data_processing_dockwidget_base.ui'))
+# FORM_CLASS, _ = uic.loadUiType(os.path.join(
+#    os.path.dirname(__file__), 'geological_data_processing_dockwidget_base.ui'))
+
+from geological_data_processing_dockwidget_base import Ui_GeologicalDataProcessingDockWidgetBase
 
 
-class GeologicalDataProcessingDockWidget(QtGui.QDockWidget, FORM_CLASS):
+class GeologicalDataProcessingDockWidget(QtGui.QDockWidget, Ui_GeologicalDataProcessingDockWidgetBase):
 
     closingPlugin = pyqtSignal()
 
