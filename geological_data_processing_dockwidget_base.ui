@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>420</width>
-    <height>796</height>
+    <width>426</width>
+    <height>900</height>
    </rect>
   </property>
   <property name="locale">
@@ -22,6 +22,12 @@
      <layout class="QVBoxLayout" name="verticalLayout">
       <item alignment="Qt::AlignTop">
        <widget class="QLabel" name="label">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="locale">
          <locale language="English" country="UnitedStates"/>
         </property>
@@ -41,7 +47,7 @@
            <string>select a database</string>
           </property>
           <property name="icon">
-           <iconset resource="resources.qrc">
+           <iconset>
             <normaloff>:/newPrefix/images/ic_storage_48px.svg</normaloff>:/newPrefix/images/ic_storage_48px.svg</iconset>
           </property>
           <property name="shortcut">
@@ -76,7 +82,7 @@
           <bool>true</bool>
          </property>
          <attribute name="icon">
-          <iconset resource="resources.qrc">
+          <iconset>
            <normaloff>:/newPrefix/images/ic_file_download_48px.svg</normaloff>:/newPrefix/images/ic_file_download_48px.svg</iconset>
          </attribute>
          <attribute name="title">
@@ -96,7 +102,7 @@
                  <string>data file</string>
                 </property>
                 <property name="icon">
-                 <iconset resource="resources.qrc">
+                 <iconset>
                   <normaloff>:/newPrefix/images/ic_perm_media_48px.svg</normaloff>:/newPrefix/images/ic_perm_media_48px.svg</iconset>
                 </property>
                </widget>
@@ -114,7 +120,7 @@
                  <string>working directory</string>
                 </property>
                 <property name="icon">
-                 <iconset resource="resources.qrc">
+                 <iconset>
                   <normaloff>:/newPrefix/images/ic_folder_open_48px.svg</normaloff>:/newPrefix/images/ic_folder_open_48px.svg</iconset>
                 </property>
                </widget>
@@ -137,12 +143,18 @@
                </widget>
               </item>
               <item>
-               <widget class="QgsProjectionSelectionWidget" name="mQgsProjectionSelectionWidget"/>
+               <widget class="QgsProjectionSelectionWidget" name="mQgsProjectionSelectionWidget" native="true"/>
               </item>
              </layout>
             </item>
             <item>
              <widget class="QToolBox" name="toolBox">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
               <property name="currentIndex">
                <number>0</number>
               </property>
@@ -151,12 +163,12 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>374</width>
-                 <height>381</height>
+                 <width>358</width>
+                 <height>443</height>
                 </rect>
                </property>
                <attribute name="icon">
-                <iconset resource="resources.qrc">
+                <iconset>
                  <normaloff>:/newPrefix/images/points.svg</normaloff>:/newPrefix/images/points.svg</iconset>
                </attribute>
                <attribute name="label">
@@ -480,14 +492,14 @@
                     </property>
                    </widget>
                   </item>
-                  <item>
-                   <widget class="QCheckBox" name="multiple_separators_points">
-                    <property name="text">
-                     <string>summarize multiple</string>
-                    </property>
-                   </widget>
-                  </item>
                  </layout>
+                </item>
+                <item>
+                 <widget class="QCheckBox" name="multiple_separators_points">
+                  <property name="text">
+                   <string>summarize multiple separators</string>
+                  </property>
+                 </widget>
                 </item>
                 <item>
                  <spacer name="verticalSpacer">
@@ -519,12 +531,12 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>374</width>
-                 <height>381</height>
+                 <width>358</width>
+                 <height>409</height>
                 </rect>
                </property>
                <attribute name="icon">
-                <iconset resource="resources.qrc">
+                <iconset>
                  <normaloff>:/newPrefix/images/ic_timeline_black_48px.svg</normaloff>:/newPrefix/images/ic_timeline_black_48px.svg</iconset>
                </attribute>
                <attribute name="label">
@@ -536,12 +548,12 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>374</width>
-                 <height>381</height>
+                 <width>358</width>
+                 <height>409</height>
                 </rect>
                </property>
                <attribute name="icon">
-                <iconset resource="resources.qrc">
+                <iconset>
                  <normaloff>:/newPrefix/images/WellDerick.svg</normaloff>:/newPrefix/images/WellDerick.svg</iconset>
                </attribute>
                <attribute name="label">
@@ -553,12 +565,12 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>374</width>
-                 <height>381</height>
+                 <width>358</width>
+                 <height>409</height>
                 </rect>
                </property>
                <attribute name="icon">
-                <iconset resource="resources.qrc">
+                <iconset>
                  <normaloff>:/newPrefix/images/ic_equalizer_48px.svg</normaloff>:/newPrefix/images/ic_equalizer_48px.svg</iconset>
                </attribute>
                <attribute name="label">
@@ -570,12 +582,12 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>374</width>
-                 <height>381</height>
+                 <width>358</width>
+                 <height>409</height>
                 </rect>
                </property>
                <attribute name="icon">
-                <iconset resource="resources.qrc">
+                <iconset>
                  <normaloff>:/newPrefix/images/log.svg</normaloff>:/newPrefix/images/log.svg</iconset>
                </attribute>
                <attribute name="label">
@@ -597,7 +609,7 @@
         </widget>
         <widget class="QWidget" name="process_data">
          <attribute name="icon">
-          <iconset resource="resources.qrc">
+          <iconset>
            <normaloff>:/newPrefix/images/ic_swap_calls_48px.svg</normaloff>:/newPrefix/images/ic_swap_calls_48px.svg</iconset>
          </attribute>
          <attribute name="title">
@@ -606,7 +618,7 @@
         </widget>
         <widget class="QWidget" name="export_data">
          <attribute name="icon">
-          <iconset resource="resources.qrc">
+          <iconset>
            <normaloff>:/newPrefix/images/ic_file_upload_48px.svg</normaloff>:/newPrefix/images/ic_file_upload_48px.svg</iconset>
          </attribute>
          <attribute name="title">
@@ -644,12 +656,9 @@
   <tabstop>point_set_name</tabstop>
   <tabstop>comment_points</tabstop>
   <tabstop>separator_points</tabstop>
-  <tabstop>multiple_separators_points</tabstop>
   <tabstop>import_columns_points</tabstop>
   <tabstop>start_import_button</tabstop>
  </tabstops>
- <resources>
-  <include location="resources.qrc"/>
- </resources>
+ <resources/>
  <connections/>
 </ui>
