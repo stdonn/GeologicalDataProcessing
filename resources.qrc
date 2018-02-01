@@ -1,16 +1,16 @@
 <RCC>
-  <qresource prefix="newPrefix">
-    <file>images/WellDerick.svg</file>
-    <file>images/log.svg</file>
-    <file>images/ic_folder_open_48px.svg</file>
-    <file>images/points.svg</file>
-    <file>images/ic_assessment_48px.svg</file>
-    <file>images/ic_timeline_black_48px.svg</file>
-    <file>images/ic_file_download_48px.svg</file>
-    <file>images/ic_file_upload_48px.svg</file>
-    <file>images/ic_perm_media_48px.svg</file>
-    <file>images/ic_equalizer_48px.svg</file>
-    <file>images/ic_storage_48px.svg</file>
-    <file>images/ic_swap_calls_48px.svg</file>
-  </qresource>
+    <qresource prefix="newPrefix">
+        <file>images/WellDerick.svg</file>
+        <file>images/log.svg</file>
+        <file>images/ic_folder_open_48px.svg</file>
+        <file>images/points.svg</file>
+        <file>images/ic_assessment_48px.svg</file>
+        <file>images/ic_timeline_black_48px.svg</file>
+        <file>images/ic_file_download_48px.svg</file>
+        <file>images/ic_file_upload_48px.svg</file>
+        <file>images/ic_perm_media_48px.svg</file>
+        <file>images/ic_equalizer_48px.svg</file>
+        <file>images/ic_storage_48px.svg</file>
+        <file>images/ic_swap_calls_48px.svg</file>
+    </qresource>
 </RCC>

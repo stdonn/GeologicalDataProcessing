@@ -17,17 +17,21 @@ except AttributeError:
 
 try:
     _encoding = QtGui.QApplication.UnicodeUTF8
+
+
     def _translate(context, text, disambig):
         return QtGui.QApplication.translate(context, text, disambig, _encoding)
 except AttributeError:
     def _translate(context, text, disambig):
         return QtGui.QApplication.translate(context, text, disambig)
 
+
 class Ui_GeologicalDataProcessingDockWidgetBase(object):
     def setupUi(self, GeologicalDataProcessingDockWidgetBase):
         GeologicalDataProcessingDockWidgetBase.setObjectName(_fromUtf8("GeologicalDataProcessingDockWidgetBase"))
         GeologicalDataProcessingDockWidgetBase.resize(420, 796)
-        GeologicalDataProcessingDockWidgetBase.setLocale(QtCore.QLocale(QtCore.QLocale.English, QtCore.QLocale.UnitedStates))
+        GeologicalDataProcessingDockWidgetBase.setLocale(
+            QtCore.QLocale(QtCore.QLocale.English, QtCore.QLocale.UnitedStates))
         self.dockWidgetContents = QtGui.QWidget()
         self.dockWidgetContents.setObjectName(_fromUtf8("dockWidgetContents"))
         self.verticalLayout_2 = QtGui.QVBoxLayout(self.dockWidgetContents)
@@ -45,7 +49,8 @@ class Ui_GeologicalDataProcessingDockWidgetBase(object):
         self.horizontalLayout_3.addWidget(self.database_file)
         self.select_DB = QtGui.QPushButton(self.dockWidgetContents)
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap(_fromUtf8(":/newPrefix/images/ic_storage_48px.svg")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap(_fromUtf8(":/newPrefix/images/ic_storage_48px.svg")), QtGui.QIcon.Normal,
+                       QtGui.QIcon.Off)
         self.select_DB.setIcon(icon)
         self.select_DB.setObjectName(_fromUtf8("select_DB"))
         self.horizontalLayout_3.addWidget(self.select_DB)
@@ -73,7 +78,8 @@ class Ui_GeologicalDataProcessingDockWidgetBase(object):
         self.horizontalLayout_2.addWidget(self.import_file)
         self.import_file_button = QtGui.QPushButton(self.import_data)
         icon1 = QtGui.QIcon()
-        icon1.addPixmap(QtGui.QPixmap(_fromUtf8(":/newPrefix/images/ic_perm_media_48px.svg")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon1.addPixmap(QtGui.QPixmap(_fromUtf8(":/newPrefix/images/ic_perm_media_48px.svg")), QtGui.QIcon.Normal,
+                        QtGui.QIcon.Off)
         self.import_file_button.setIcon(icon1)
         self.import_file_button.setObjectName(_fromUtf8("import_file_button"))
         self.horizontalLayout_2.addWidget(self.import_file_button)
@@ -85,7 +91,8 @@ class Ui_GeologicalDataProcessingDockWidgetBase(object):
         self.horizontalLayout_4.addWidget(self.working_dir)
         self.working_dir_button = QtGui.QPushButton(self.import_data)
         icon2 = QtGui.QIcon()
-        icon2.addPixmap(QtGui.QPixmap(_fromUtf8(":/newPrefix/images/ic_folder_open_48px.svg")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon2.addPixmap(QtGui.QPixmap(_fromUtf8(":/newPrefix/images/ic_folder_open_48px.svg")), QtGui.QIcon.Normal,
+                        QtGui.QIcon.Off)
         self.working_dir_button.setIcon(icon2)
         self.working_dir_button.setObjectName(_fromUtf8("working_dir_button"))
         self.horizontalLayout_4.addWidget(self.working_dir_button)
@@ -295,19 +302,22 @@ class Ui_GeologicalDataProcessingDockWidgetBase(object):
         self.line_tab.setGeometry(QtCore.QRect(0, 0, 374, 381))
         self.line_tab.setObjectName(_fromUtf8("line_tab"))
         icon4 = QtGui.QIcon()
-        icon4.addPixmap(QtGui.QPixmap(_fromUtf8(":/newPrefix/images/ic_timeline_black_48px.svg")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon4.addPixmap(QtGui.QPixmap(_fromUtf8(":/newPrefix/images/ic_timeline_black_48px.svg")), QtGui.QIcon.Normal,
+                        QtGui.QIcon.Off)
         self.toolBox.addItem(self.line_tab, icon4, _fromUtf8(""))
         self.wells = QtGui.QWidget()
         self.wells.setGeometry(QtCore.QRect(0, 0, 374, 381))
         self.wells.setObjectName(_fromUtf8("wells"))
         icon5 = QtGui.QIcon()
-        icon5.addPixmap(QtGui.QPixmap(_fromUtf8(":/newPrefix/images/WellDerick.svg")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon5.addPixmap(QtGui.QPixmap(_fromUtf8(":/newPrefix/images/WellDerick.svg")), QtGui.QIcon.Normal,
+                        QtGui.QIcon.Off)
         self.toolBox.addItem(self.wells, icon5, _fromUtf8(""))
         self.properties = QtGui.QWidget()
         self.properties.setGeometry(QtCore.QRect(0, 0, 374, 381))
         self.properties.setObjectName(_fromUtf8("properties"))
         icon6 = QtGui.QIcon()
-        icon6.addPixmap(QtGui.QPixmap(_fromUtf8(":/newPrefix/images/ic_equalizer_48px.svg")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon6.addPixmap(QtGui.QPixmap(_fromUtf8(":/newPrefix/images/ic_equalizer_48px.svg")), QtGui.QIcon.Normal,
+                        QtGui.QIcon.Off)
         self.toolBox.addItem(self.properties, icon6, _fromUtf8(""))
         self.well_logs = QtGui.QWidget()
         self.well_logs.setGeometry(QtCore.QRect(0, 0, 374, 381))
@@ -321,17 +331,20 @@ class Ui_GeologicalDataProcessingDockWidgetBase(object):
         self.verticalLayout_3.addWidget(self.start_import_button)
         self.horizontalLayout.addLayout(self.verticalLayout_3)
         icon8 = QtGui.QIcon()
-        icon8.addPixmap(QtGui.QPixmap(_fromUtf8(":/newPrefix/images/ic_file_download_48px.svg")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon8.addPixmap(QtGui.QPixmap(_fromUtf8(":/newPrefix/images/ic_file_download_48px.svg")), QtGui.QIcon.Normal,
+                        QtGui.QIcon.Off)
         self.tabwidget.addTab(self.import_data, icon8, _fromUtf8(""))
         self.process_data = QtGui.QWidget()
         self.process_data.setObjectName(_fromUtf8("process_data"))
         icon9 = QtGui.QIcon()
-        icon9.addPixmap(QtGui.QPixmap(_fromUtf8(":/newPrefix/images/ic_swap_calls_48px.svg")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon9.addPixmap(QtGui.QPixmap(_fromUtf8(":/newPrefix/images/ic_swap_calls_48px.svg")), QtGui.QIcon.Normal,
+                        QtGui.QIcon.Off)
         self.tabwidget.addTab(self.process_data, icon9, _fromUtf8(""))
         self.export_data = QtGui.QWidget()
         self.export_data.setObjectName(_fromUtf8("export_data"))
         icon10 = QtGui.QIcon()
-        icon10.addPixmap(QtGui.QPixmap(_fromUtf8(":/newPrefix/images/ic_file_upload_48px.svg")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon10.addPixmap(QtGui.QPixmap(_fromUtf8(":/newPrefix/images/ic_file_upload_48px.svg")), QtGui.QIcon.Normal,
+                         QtGui.QIcon.Off)
         self.tabwidget.addTab(self.export_data, icon10, _fromUtf8(""))
         self.verticalLayout.addWidget(self.tabwidget)
         self.verticalLayout_2.addLayout(self.verticalLayout)
@@ -361,14 +374,20 @@ class Ui_GeologicalDataProcessingDockWidgetBase(object):
         GeologicalDataProcessingDockWidgetBase.setTabOrder(self.import_columns_points, self.start_import_button)
 
     def retranslateUi(self, GeologicalDataProcessingDockWidgetBase):
-        GeologicalDataProcessingDockWidgetBase.setWindowTitle(_translate("GeologicalDataProcessingDockWidgetBase", "Geological Data Processing", None))
-        self.label.setText(_translate("GeologicalDataProcessingDockWidgetBase", "<html><head/><body><p><span style=\" font-weight:600;\">Create or import a geological sqlite database</span></p></body></html>", None))
+        GeologicalDataProcessingDockWidgetBase.setWindowTitle(
+            _translate("GeologicalDataProcessingDockWidgetBase", "Geological Data Processing", None))
+        self.label.setText(_translate("GeologicalDataProcessingDockWidgetBase",
+                                      "<html><head/><body><p><span style=\" font-weight:600;\">Create or import a geological sqlite database</span></p></body></html>",
+                                      None))
         self.select_DB.setText(_translate("GeologicalDataProcessingDockWidgetBase", "select a database", None))
         self.select_DB.setShortcut(_translate("GeologicalDataProcessingDockWidgetBase", "Ctrl+O", None))
         self.import_file_button.setText(_translate("GeologicalDataProcessingDockWidgetBase", "data file", None))
         self.working_dir_button.setText(_translate("GeologicalDataProcessingDockWidgetBase", "working directory", None))
-        self.label_12.setText(_translate("GeologicalDataProcessingDockWidgetBase", "Coordinate Reference System:", None))
-        self.label_9.setText(_translate("GeologicalDataProcessingDockWidgetBase", "<html><head/><body><p><span style=\" font-weight:600;\">define column content</span></p></body></html>", None))
+        self.label_12.setText(
+            _translate("GeologicalDataProcessingDockWidgetBase", "Coordinate Reference System:", None))
+        self.label_9.setText(_translate("GeologicalDataProcessingDockWidgetBase",
+                                        "<html><head/><body><p><span style=\" font-weight:600;\">define column content</span></p></body></html>",
+                                        None))
         self.label_2.setText(_translate("GeologicalDataProcessingDockWidgetBase", "easting", None))
         self.label_3.setText(_translate("GeologicalDataProcessingDockWidgetBase", "northing", None))
         self.label_4.setText(_translate("GeologicalDataProcessingDockWidgetBase", "altitude", None))
@@ -377,16 +396,26 @@ class Ui_GeologicalDataProcessingDockWidgetBase(object):
         self.label_7.setText(_translate("GeologicalDataProcessingDockWidgetBase", "point set name", None))
         self.label_8.setText(_translate("GeologicalDataProcessingDockWidgetBase", "comment", None))
         self.label_11.setText(_translate("GeologicalDataProcessingDockWidgetBase", "separator", None))
-        self.multiple_separators_points.setText(_translate("GeologicalDataProcessingDockWidgetBase", "summarize multiple", None))
-        self.toolBox.setItemText(self.toolBox.indexOf(self.point_tab), _translate("GeologicalDataProcessingDockWidgetBase", "Points", None))
-        self.toolBox.setItemText(self.toolBox.indexOf(self.line_tab), _translate("GeologicalDataProcessingDockWidgetBase", "Lines", None))
-        self.toolBox.setItemText(self.toolBox.indexOf(self.wells), _translate("GeologicalDataProcessingDockWidgetBase", "Wells", None))
-        self.toolBox.setItemText(self.toolBox.indexOf(self.properties), _translate("GeologicalDataProcessingDockWidgetBase", "Properties", None))
-        self.toolBox.setItemText(self.toolBox.indexOf(self.well_logs), _translate("GeologicalDataProcessingDockWidgetBase", "Well Logs", None))
-        self.start_import_button.setText(_translate("GeologicalDataProcessingDockWidgetBase", " Start Data Import", None))
-        self.tabwidget.setTabText(self.tabwidget.indexOf(self.import_data), _translate("GeologicalDataProcessingDockWidgetBase", "Import Data", None))
-        self.tabwidget.setTabText(self.tabwidget.indexOf(self.process_data), _translate("GeologicalDataProcessingDockWidgetBase", "Process Data", None))
-        self.tabwidget.setTabText(self.tabwidget.indexOf(self.export_data), _translate("GeologicalDataProcessingDockWidgetBase", "Export Data", None))
+        self.multiple_separators_points.setText(
+            _translate("GeologicalDataProcessingDockWidgetBase", "summarize multiple", None))
+        self.toolBox.setItemText(self.toolBox.indexOf(self.point_tab),
+                                 _translate("GeologicalDataProcessingDockWidgetBase", "Points", None))
+        self.toolBox.setItemText(self.toolBox.indexOf(self.line_tab),
+                                 _translate("GeologicalDataProcessingDockWidgetBase", "Lines", None))
+        self.toolBox.setItemText(self.toolBox.indexOf(self.wells),
+                                 _translate("GeologicalDataProcessingDockWidgetBase", "Wells", None))
+        self.toolBox.setItemText(self.toolBox.indexOf(self.properties),
+                                 _translate("GeologicalDataProcessingDockWidgetBase", "Properties", None))
+        self.toolBox.setItemText(self.toolBox.indexOf(self.well_logs),
+                                 _translate("GeologicalDataProcessingDockWidgetBase", "Well Logs", None))
+        self.start_import_button.setText(
+            _translate("GeologicalDataProcessingDockWidgetBase", " Start Data Import", None))
+        self.tabwidget.setTabText(self.tabwidget.indexOf(self.import_data),
+                                  _translate("GeologicalDataProcessingDockWidgetBase", "Import Data", None))
+        self.tabwidget.setTabText(self.tabwidget.indexOf(self.process_data),
+                                  _translate("GeologicalDataProcessingDockWidgetBase", "Process Data", None))
+        self.tabwidget.setTabText(self.tabwidget.indexOf(self.export_data),
+                                  _translate("GeologicalDataProcessingDockWidgetBase", "Export Data", None))
+
 
 from qgis.gui import QgsProjectionSelectionWidget
-import resources_rc

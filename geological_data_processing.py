@@ -20,14 +20,16 @@
  *                                                                         *
  ***************************************************************************/
 """
+import os.path
+
 from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt
-from PyQt4.QtGui import QAction, QIcon
-# Initialize Qt resources from file resources.py
-import resources_rc
+from PyQt4.QtGui import QAction, QIcon, QFileDialog, QMessageBox
 
 # Import the code for the DockWidget
 from geological_data_processing_dockwidget import GeologicalDataProcessingDockWidget
-import os.path
+
+
+# Initialize Qt resources from file resources.py
 
 
 class GeologicalDataProcessing:
@@ -50,9 +52,9 @@ class GeologicalDataProcessing:
         # initialize locale
         locale = QSettings().value('locale/userLocale')[0:2]
         locale_path = os.path.join(
-            self.plugin_dir,
-            'i18n',
-            'GeologicalDataProcessing_{}.qm'.format(locale))
+                self.plugin_dir,
+                'i18n',
+                'GeologicalDataProcessing_{}.qm'.format(locale))
 
         if os.path.exists(locale_path):
             self.translator = QTranslator()
@@ -68,11 +70,10 @@ class GeologicalDataProcessing:
         self.toolbar = self.iface.addToolBar(u'GeologicalDataProcessing')
         self.toolbar.setObjectName(u'GeologicalDataProcessing')
 
-        #print "** INITIALIZING GeologicalDataProcessing"
+        # print "** INITIALIZING GeologicalDataProcessing"
 
         self.pluginIsActive = False
         self.dockwidget = None
-
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -89,18 +90,17 @@ class GeologicalDataProcessing:
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
         return QCoreApplication.translate('GeologicalDataProcessing', message)
 
-
     def add_action(
-        self,
-        icon_path,
-        text,
-        callback,
-        enabled_flag=True,
-        add_to_menu=True,
-        add_to_toolbar=True,
-        status_tip=None,
-        whats_this=None,
-        parent=None):
+            self,
+            icon_path,
+            text,
+            callback,
+            enabled_flag=True,
+            add_to_menu=True,
+            add_to_toolbar=True,
+            status_tip=None,
+            whats_this=None,
+            parent=None):
         """Add a toolbar icon to the toolbar.
 
         :param icon_path: Path to the icon for this action. Can be a resource
@@ -156,30 +156,29 @@ class GeologicalDataProcessing:
 
         if add_to_menu:
             self.iface.addPluginToMenu(
-                self.menu,
-                action)
+                    self.menu,
+                    action)
 
         self.actions.append(action)
 
         return action
-
 
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
         icon_path = ':/plugins/GeologicalDataProcessing/icon.png'
         self.add_action(
-            icon_path,
-            text=self.tr(u'Geological Data Processing'),
-            callback=self.run,
-            parent=self.iface.mainWindow())
+                icon_path,
+                text=self.tr(u'Geological Data Processing'),
+                callback=self.run,
+                parent=self.iface.mainWindow())
 
-    #--------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def onClosePlugin(self):
         """Cleanup necessary items here when plugin dockwidget is closed"""
 
-        #print "** CLOSING GeologicalDataProcessing"
+        # print "** CLOSING GeologicalDataProcessing"
 
         # disconnects
         self.dockwidget.closingPlugin.disconnect(self.onClosePlugin)
@@ -192,21 +191,20 @@ class GeologicalDataProcessing:
 
         self.pluginIsActive = False
 
-
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
 
-        #print "** UNLOAD GeologicalDataProcessing"
+        # print "** UNLOAD GeologicalDataProcessing"
 
         for action in self.actions:
             self.iface.removePluginMenu(
-                self.tr(u'&Geological Data Processing'),
-                action)
+                    self.tr(u'&Geological Data Processing'),
+                    action)
             self.iface.removeToolBarIcon(action)
         # remove the toolbar
         del self.toolbar
 
-    #--------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def run(self):
         """Run method that loads and starts the plugin"""
@@ -214,7 +212,7 @@ class GeologicalDataProcessing:
         if not self.pluginIsActive:
             self.pluginIsActive = True
 
-            #print "** STARTING GeologicalDataProcessing"
+            # print "** STARTING GeologicalDataProcessing"
 
             # dockwidget may not exist if:
             #    first run of plugin
@@ -231,3 +229,29 @@ class GeologicalDataProcessing:
             self.iface.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget)
             self.dockwidget.show()
 
+            # initialize the gui and connect signals and slots
+            # 1 - General
+            self.dockwidget.select_DB.clicked.connect(self.select_db)
+            # 2 - Import tab
+            # 2.1 - Import points
+            self.dockwidget.easting_points.addItems(['1', '2', '3'])
+
+    def select_db(self):
+        """
+        slot for selecting a sqlite database file and set the result to the related lineedit
+
+        :return: Nothing
+        """
+        dialog = QFileDialog(self.dockwidget, "Select database file ", "",
+                                              "Databases(*.db *.sqlite *.data;;All Files(*)")
+        dialog.setViewMode(QFileDialog.AnyFile)
+        if dialog.exec():
+            filenames = dialog.selectedFiles()
+            if len(filenames) < 1:
+                QMessageBox.warning(self.dockwidget, "No database...", "No database was selected...")
+            else:
+                self.dockwidget.database_file.setText(filenames[0])
+
+        #filename = QFileDialog.getOpenFileName(self.dockwidget, "Select database file ", "",
+        #                                       'Databases(*.db *.sqlite *.data;;All Files(*)')
+        #self.dockwidget.database_file.setText(filename)

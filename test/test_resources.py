@@ -17,7 +17,6 @@ import unittest
 from PyQt4.QtGui import QIcon
 
 
-
 class GeologicalDataProcessingDialogTest(unittest.TestCase):
     """Test rerources work."""
 
@@ -35,10 +34,8 @@ class GeologicalDataProcessingDialogTest(unittest.TestCase):
         icon = QIcon(path)
         self.assertFalse(icon.isNull())
 
+
 if __name__ == "__main__":
     suite = unittest.makeSuite(GeologicalDataProcessingResourcesTest)
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite)
-
-
-

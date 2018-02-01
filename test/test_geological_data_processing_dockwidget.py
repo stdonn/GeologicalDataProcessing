@@ -14,11 +14,9 @@ __copyright__ = 'Copyright 2018, Stephan Donndorf'
 
 import unittest
 
-from PyQt4.QtGui import QDockWidget
+from utilities import get_qgis_app
 
 from geological_data_processing_dockwidget import GeologicalDataProcessingDockWidget
-
-from utilities import get_qgis_app
 
 QGIS_APP = get_qgis_app()
 
@@ -38,8 +36,8 @@ class GeologicalDataProcessingDockWidgetTest(unittest.TestCase):
         """Test we can click OK."""
         pass
 
+
 if __name__ == "__main__":
     suite = unittest.makeSuite(GeologicalDataProcessingDialogTest)
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite)
-
