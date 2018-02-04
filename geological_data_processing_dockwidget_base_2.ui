@@ -688,7 +688,7 @@
   <customwidget>
    <class>QgsProjectionSelectionWidget</class>
    <extends>QWidget</extends>
-   <header>qgis.gui</header>
+   <header>qgsprojectionselectionwidget.h</header>
   </customwidget>
  </customwidgets>
  <tabstops>
@@ -711,6 +711,8 @@
   <tabstop>import_columns_points</tabstop>
   <tabstop>start_import_button</tabstop>
  </tabstops>
- <resources/>
+ <resources>
+  <include location="resources.qrc"/>
+ </resources>
  <connections/>
 </ui>

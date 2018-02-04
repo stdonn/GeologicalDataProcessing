@@ -232,26 +232,138 @@ class GeologicalDataProcessing:
             # initialize the gui and connect signals and slots
             # 1 - General
             self.dockwidget.select_DB.clicked.connect(self.select_db)
+            self.dockwidget.select_data_file_button.clicked.connect(self.select_data_file)
             # 2 - Import tab
             # 2.1 - Import points
-            self.dockwidget.easting_points.addItems(['1', '2', '3'])
+            self.dockwidget.import_columns_points.hide()
+            self.dockwidget.separator.addItems([';', ',', '<tabulator>', '.', '-', '_', '/', '\\'])
 
     def select_db(self):
+        # type: () -> None
         """
         slot for selecting a sqlite database file and set the result to the related lineedit
 
         :return: Nothing
+        :raises IOError: if number of returned databases is not 1
         """
-        dialog = QFileDialog(self.dockwidget, "Select database file ", "",
-                                              "Databases(*.db *.sqlite *.data;;All Files(*)")
-        dialog.setViewMode(QFileDialog.AnyFile)
-        if dialog.exec():
+        dialog = QFileDialog(self.dockwidget)
+        dialog.setWindowTitle("Select database file ")
+        dialog.setFileMode(QFileDialog.AnyFile)
+        dialog.setFilters(["Databases(*.db *.sqlite *.data)", "Any File Type (*)"])
+        if dialog.exec_():
+            dialog.show()
             filenames = dialog.selectedFiles()
-            if len(filenames) < 1:
-                QMessageBox.warning(self.dockwidget, "No database...", "No database was selected...")
+            if len(filenames) != 1:
+                raise IOError("Number of returned database files is not one!")
             else:
+                if os.path.splitext(filenames[0])[-1].lower() not in ["db", "data", "sqlite"]:
+                    filenames[0] += ".data"
                 self.dockwidget.database_file.setText(filenames[0])
 
-        #filename = QFileDialog.getOpenFileName(self.dockwidget, "Select database file ", "",
+        # filename = QFileDialog.getOpenFileName(self.dockwidget, "Select database file ", "",
         #                                       'Databases(*.db *.sqlite *.data;;All Files(*)')
-        #self.dockwidget.database_file.setText(filename)
+        # self.dockwidget.database_file.setText(filename)
+
+    def select_data_file(self):
+        # type: () -> None
+        """
+        slot for selecting an import data file and processing the corresponding fields inside the import data tab.
+
+        :return: Nothing
+        """
+        dialog = QFileDialog(self.dockwidget)
+        dialog.setWindowTitle("Select a data file")
+        dialog.setFileMode(QFileDialog.ExistingFile)
+        dialog.setFilters(["Data Files(*.txt *.csv *.data)", "Any File Type (*)"])
+        if dialog.exec_():
+            dialog.show()
+            filenames = dialog.selectedFiles()
+            if len(filenames) != 1:
+                raise IOError("Number of returned files is not one!")
+            else:
+                self.dockwidget.import_file.setText(filenames[0])
+
+                import_file = self.dockwidget.import_file.text()
+                try:
+                    import_file = open(import_file, 'r')
+                except IOError:
+                    self.dockwidget.easting_points.clear()
+                    self.dockwidget.northing_points.clear()
+                    self.dockwidget.altitude_points.clear()
+                    self.dockwidget.strat_points.clear()
+                    self.dockwidget.strat_age_points.clear()
+                    self.dockwidget.point_set.clear()
+                    self.dockwidget.comment_points.clear()
+                    return
+
+                cols = import_file.readline()
+                props = import_file.readline()
+                data = import_file.readline()
+                import_file.close()
+
+                if '' in [cols, props, data]:
+                    QMessageBox("Import File Error", "Cannot process import file, wrong file format!")
+                    self.dockwidget.import_file.setText("")
+                    self.dockwidget.easting_points.clear()
+                    self.dockwidget.northing_points.clear()
+                    self.dockwidget.altitude_points.clear()
+                    self.dockwidget.strat_points.clear()
+                    self.dockwidget.strat_age_points.clear()
+                    self.dockwidget.point_set.clear()
+                    self.dockwidget.comment_points.clear()
+                    return
+
+                self.dockwidget.separator.currentIndexChanged.connect(self.process_point_import)
+
+                for sep in [';', ',', '\t', '.', '-', '_', '/', '\\']:
+                    split = cols.split(sep)
+                    if len(split) < 3:
+                        continue
+                    elif sep == '\t':
+                        index = self.dockwidget.separator.findText("<tabulator>", Qt.MatchFixedString)
+                        if index >= 0:
+                            self.dockwidget.separator.setCurrentIndex(index)
+                    else:
+                        index = self.dockwidget.separator.findText(sep, Qt.MatchFixedString)
+                        if index >= 0:
+                            self.dockwidget.separator.setCurrentIndex(index)
+
+                self.process_point_import(self.dockwidget.separator.currentText)
+
+    def process_point_import(self, separator):
+        if separator == "<tabulator>":
+            separator = '\t'
+
+        import_file = self.dockwidget.import_file.text()
+        try:
+            import_file = open(import_file, 'r')
+        except IOError:
+            return
+
+        cols = import_file.readline().split(separator)
+        props = import_file.readline().split(separator)
+        data = import_file.readline().split(separator)
+
+        import_file.close()
+
+        nr_cols = []
+        for col in data:
+            try:
+                float(col)
+                nr_cols.append(data.index(col))
+            except ValueError:
+                pass
+
+        if len(nr_cols) < 3:
+            QMessageBox("Not enough columns",
+                        "Cannot find enough columns. Maybe use a different separator or another import file")
+            return
+
+        numbers = [cols[x] for x in nr_cols]
+        self.dockwidget.easting_points.addItem(numbers)
+        self.dockwidget.northing_points.addItem(numbers)
+        self.dockwidget.altitude_points.addItem(numbers)
+        self.dockwidget.strat_points.addItem(data)
+        self.dockwidget.strat_age_points.addItem([''] + numbers)
+        self.dockwidget.point_set.addItem(data)
+        self.dockwidget.comment_points.addItem(data)
