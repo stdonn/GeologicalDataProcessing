@@ -3,7 +3,7 @@
 remove process ui conversion and remove errors
 """
 
-with_resources = True
+without_resources = True
 
 import platform
 import subprocess
@@ -14,7 +14,7 @@ if __name__ == '__main__':
     lines = []
     resource = False
     for line in ui_file:
-        if with_resources:
+        if without_resources:
             if resource and ("</resources>" in line):
                 resource = False
                 continue
@@ -22,7 +22,7 @@ if __name__ == '__main__':
                 continue
             elif "<resources>" in line:
                 resource = True
-                lines.append(line.replace("<resources>", "<resources/>").rstrip())
+                #lines.append(line.replace("<resources>", "<resources/>").rstrip())
             else:
                 lines.append(line.replace("<header>qgsprojectionselectionwidget.h</header>",
                                           "<header>qgis.gui</header>").rstrip())
@@ -45,7 +45,7 @@ if __name__ == '__main__':
     stdout = process.stdout.read()
     stderr = process.stderr.read()
 
-    if stdout != stderr != "":
+    if (stdout != "") and (stderr != ""):
         print("Could not run pyrcc4:")
         print("stdout:\n{}".format(stdout))
         print("stderr:\n{}".format(stderr))
