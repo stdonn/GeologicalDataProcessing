@@ -3,10 +3,10 @@
 remove process ui conversion and remove errors
 """
 
-without_resources = True
-
 import platform
 import subprocess
+
+without_resources = True
 
 if __name__ == '__main__':
     ui_file_name = "geological_data_processing_dockwidget_base_2.ui"
@@ -22,7 +22,7 @@ if __name__ == '__main__':
                 continue
             elif "<resources>" in line:
                 resource = True
-                #lines.append(line.replace("<resources>", "<resources/>").rstrip())
+                # lines.append(line.replace("<resources>", "<resources/>").rstrip())
             else:
                 lines.append(line.replace("<header>qgsprojectionselectionwidget.h</header>",
                                           "<header>qgis.gui</header>").rstrip())

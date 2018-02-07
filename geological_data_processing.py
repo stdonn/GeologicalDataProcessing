@@ -20,16 +20,25 @@
  *                                                                         *
  ***************************************************************************/
 """
+
 import os.path
+import platform
+import sys
+import traceback
 
 from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt
 from PyQt4.QtGui import QAction, QIcon, QFileDialog, QMessageBox
+from qgis.core import QgsMessageLog
+from qgis.gui import QgsMessageBar
 
 # Import the code for the DockWidget
 from geological_data_processing_dockwidget import GeologicalDataProcessingDockWidget
 
-
 # Initialize Qt resources from file resources.py
+# import is necessary to show icons, as <resources></resources> part had to be deleted from ui file
+import resources_rc
+
+debug = True
 
 
 class GeologicalDataProcessing:
@@ -52,9 +61,9 @@ class GeologicalDataProcessing:
         # initialize locale
         locale = QSettings().value('locale/userLocale')[0:2]
         locale_path = os.path.join(
-            self.plugin_dir,
-            'i18n',
-            'GeologicalDataProcessing_{}.qm'.format(locale))
+                self.plugin_dir,
+                'i18n',
+                'GeologicalDataProcessing_{}.qm'.format(locale))
 
         if os.path.exists(locale_path):
             self.translator = QTranslator()
@@ -74,6 +83,7 @@ class GeologicalDataProcessing:
 
         self.pluginIsActive = False
         self.dockwidget = None
+        self.import_widgets = dict()
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -156,8 +166,8 @@ class GeologicalDataProcessing:
 
         if add_to_menu:
             self.iface.addPluginToMenu(
-                self.menu,
-                action)
+                    self.menu,
+                    action)
 
         self.actions.append(action)
 
@@ -168,10 +178,10 @@ class GeologicalDataProcessing:
 
         icon_path = ':/plugins/GeologicalDataProcessing/icon.png'
         self.add_action(
-            icon_path,
-            text=self.tr(u'Geological Data Processing'),
-            callback=self.run,
-            parent=self.iface.mainWindow())
+                icon_path,
+                text=self.tr(u'Geological Data Processing'),
+                callback=self.run,
+                parent=self.iface.mainWindow())
 
     # --------------------------------------------------------------------------
 
@@ -198,8 +208,8 @@ class GeologicalDataProcessing:
 
         for action in self.actions:
             self.iface.removePluginMenu(
-                self.tr(u'&Geological Data Processing'),
-                action)
+                    self.tr(u'&Geological Data Processing'),
+                    action)
             self.iface.removeToolBarIcon(action)
         # remove the toolbar
         del self.toolbar
@@ -217,9 +227,20 @@ class GeologicalDataProcessing:
             # dockwidget may not exist if:
             #    first run of plugin
             #    removed on close (see self.onClosePlugin method)
-            if self.dockwidget == None:
+            if self.dockwidget is None:
                 # Create the dockwidget (after translation) and keep reference
                 self.dockwidget = GeologicalDataProcessingDockWidget()
+
+            # summarize import Widgets
+            self.import_widgets['points'] = (
+                self.dockwidget.easting_points,
+                self.dockwidget.northing_points,
+                self.dockwidget.altitude_points,
+                self.dockwidget.strat_points,
+                self.dockwidget.strat_age_points,
+                self.dockwidget.set_name_points,
+                self.dockwidget.comment_points
+            )
 
             # connect to provide cleanup on closing of dockwidget
             self.dockwidget.closingPlugin.connect(self.onClosePlugin)
@@ -238,6 +259,7 @@ class GeologicalDataProcessing:
             # 2.1 - Import points
             self.dockwidget.import_columns_points.hide()
             self.dockwidget.separator.addItems([';', ',', '<tabulator>', '.', '-', '_', '/', '\\'])
+            self.dockwidget.separator.currentIndexChanged[str].connect(self.process_point_import)
 
     def create_db(self):
         # type: () -> None
@@ -253,7 +275,6 @@ class GeologicalDataProcessing:
             if os.path.splitext(filename)[-1].lower().lstrip('.') not in ["db", "data", "sqlite"]:
                 filename += ".data"
             self.dockwidget.database_file.setText(filename)
-
 
     def select_db(self):
         # type: () -> None
@@ -277,7 +298,13 @@ class GeologicalDataProcessing:
 
         :return: Nothing
         """
-        filename = QFileDialog.getOpenFileName(self.dockwidget, "Select data file", "/Users/stephan/Documents/work/Dissertation/PythonModules/GeologicalToolbox/GeologicalToolbox/tests/test_data/",
+        path = u"/Users/stephan/Documents/work/Dissertation/PythonModules/GeologicalToolbox/GeologicalToolbox/" + \
+               u"tests/test_data/"
+        if platform.system() == "Windows":
+            path = u"C:/Programmieren/GeologicalToolbox/GeologicalToolbox/tests/test_data"
+
+        filename = QFileDialog.getOpenFileName(self.dockwidget, "Select data file",
+                                               path,
                                                "Data Files(*.txt *.csv *.data);;Any File Type (*)")
 
         if filename != "":
@@ -287,13 +314,8 @@ class GeologicalDataProcessing:
             try:
                 import_file = open(import_file, 'r')
             except IOError:
-                self.dockwidget.easting_points.clear()
-                self.dockwidget.northing_points.clear()
-                self.dockwidget.altitude_points.clear()
-                self.dockwidget.strat_points.clear()
-                self.dockwidget.strat_age_points.clear()
-                self.dockwidget.point_set.clear()
-                self.dockwidget.comment_points.clear()
+                for item in self.import_widgets["points"]:
+                    item.clear()
                 return
 
             cols = import_file.readline().strip()
@@ -305,16 +327,9 @@ class GeologicalDataProcessing:
                 QMessageBox.critical(self.dockwidget, "Import File Error",
                                      "Cannot process import file, wrong file format!")
                 self.dockwidget.import_file.setText("")
-                self.dockwidget.easting_points.clear()
-                self.dockwidget.northing_points.clear()
-                self.dockwidget.altitude_points.clear()
-                self.dockwidget.strat_points.clear()
-                self.dockwidget.strat_age_points.clear()
-                self.dockwidget.point_set.clear()
-                self.dockwidget.comment_points.clear()
-                return
-
-            self.dockwidget.separator.currentIndexChanged.connect(self.process_point_import)
+                for tab in self.import_widgets:
+                    for item in self.import_widgets[tab]:
+                        item.clear()
 
             for sep in [';', ',', '\t', '.', '-', '_', '/', '\\']:
                 split = cols.split(sep)
@@ -329,46 +344,61 @@ class GeologicalDataProcessing:
                     if index >= 0:
                         self.dockwidget.separator.setCurrentIndex(index)
 
-            self.process_point_import(self.dockwidget.separator.currentText())
-
     def process_point_import(self, separator):
-        if separator == "<tabulator>":
-            separator = '\t'
-        QMessageBox.information(self.dockwidget, "Current separator", str(separator))
-
-        import_file = self.dockwidget.import_file.text()
+        # type: (str) -> None
         try:
-            import_file = open(import_file, 'r')
-        except IOError:
-            return
+            if debug:
+                QgsMessageLog.logMessage("Selected separator: {}".format(separator), level=QgsMessageLog.INFO)
+            if separator == "<tabulator>":
+                separator = '\t'
 
-        cols = import_file.readline().strip()
-        props = import_file.readline().strip()
-        data = import_file.readline().strip()
-        cols = cols.split(separator)
-        props = props.split(separator)
-        data = data.split(separator)
-
-        import_file.close()
-
-        nr_cols = []
-        for col in data:
+            import_file = self.dockwidget.import_file.text()
             try:
-                float(col)
-                nr_cols.append(data.index(col))
-            except ValueError:
-                pass
+                import_file = open(import_file, 'r')
+            except IOError:
+                return
 
-        if len(nr_cols) < 3:
-            QMessageBox.critical(self.dockwidget, "Not enough columns",
-                                 "Cannot find enough columns. Maybe use a different separator or another import file")
-            return
+            cols = import_file.readline().strip().split(separator)
+            props = import_file.readline().strip().split(separator)
+            data = import_file.readline().strip().split(separator)
 
-        numbers = [cols[x] for x in nr_cols]
-        self.dockwidget.easting_points.addItem(numbers)
-        self.dockwidget.northing_points.addItem(numbers)
-        self.dockwidget.altitude_points.addItem(numbers)
-        self.dockwidget.strat_points.addItem(data)
-        self.dockwidget.strat_age_points.addItem([''] + numbers)
-        self.dockwidget.point_set.addItem(data)
-        self.dockwidget.comment_points.addItem(data)
+            if debug:
+                QgsMessageLog.logMessage("cols:\t{}".format(cols), level=QgsMessageLog.INFO)
+                QgsMessageLog.logMessage("props:\t{}".format(props), level=QgsMessageLog.INFO)
+                QgsMessageLog.logMessage("data:\t{}".format(data), level=QgsMessageLog.INFO)
+
+            import_file.close()
+
+            nr_cols = []
+            for col in data:
+                try:
+                    float(col)
+                    nr_cols.append(data.index(col))
+                except ValueError:
+                    pass
+
+            if len(nr_cols) < 3:
+                QMessageBox.critical(self.dockwidget, "Not enough columns",
+                                     "Cannot find enough columns. " +
+                                     "Maybe use a different separator or another import file")
+                for item in self.import_widgets["points"]:
+                    item.clear()
+                return
+
+            numbers = [cols[x] for x in nr_cols]
+            self.dockwidget.easting_points.addItems(numbers)
+            self.dockwidget.easting_points.setCurrentIndex(0)
+            self.dockwidget.northing_points.addItems(numbers)
+            self.dockwidget.northing_points.setCurrentIndex(1)
+            self.dockwidget.altitude_points.addItems(numbers)
+            self.dockwidget.altitude_points.setCurrentIndex(2)
+            self.dockwidget.strat_points.addItems([''] + cols)
+            self.dockwidget.strat_age_points.addItems([''] + numbers)
+            self.dockwidget.set_name_points.addItems([''] + cols)
+            self.dockwidget.comment_points.addItems([''] + cols)
+        except Exception as e:
+            _, _, exc_traceback = sys.exc_info()
+            text = "Error Message:\n{}\nTraceback:\n{}".format(e.message, ''.join(traceback.format_tb(exc_traceback)))
+            # text = "Error Message:\nNone\nTraceback:\n{}".format(traceback.print_exc())
+            self.iface.messageBar().pushMessage("Error", text, level=QgsMessageBar.CRITICAL)
+            QgsMessageLog.logMessage(text, level=QgsMessageLog.CRITICAL)

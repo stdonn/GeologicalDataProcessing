@@ -48,7 +48,7 @@
         <item>
          <widget class="QPushButton" name="create_DB_button">
           <property name="layoutDirection">
-           <enum>Qt::RightToLeft</enum>
+           <enum>Qt::LeftToRight</enum>
           </property>
           <property name="text">
            <string>create</string>
@@ -57,12 +57,15 @@
            <iconset resource="resources.qrc">
             <normaloff>:/plugins/GeologicalDataProcessing/images/ic_storage_48px.svg</normaloff>:/plugins/GeologicalDataProcessing/images/ic_storage_48px.svg</iconset>
           </property>
+          <property name="autoRepeat">
+           <bool>false</bool>
+          </property>
          </widget>
         </item>
         <item>
          <widget class="QPushButton" name="select_DB_button">
           <property name="layoutDirection">
-           <enum>Qt::RightToLeft</enum>
+           <enum>Qt::LeftToRight</enum>
           </property>
           <property name="text">
            <string>open</string>
@@ -195,43 +198,6 @@
              </layout>
             </item>
             <item>
-             <widget class="QCheckBox" name="multiple_separators_points">
-              <property name="enabled">
-               <bool>true</bool>
-              </property>
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="font">
-               <font>
-                <strikeout>false</strikeout>
-                <kerning>true</kerning>
-               </font>
-              </property>
-              <property name="layoutDirection">
-               <enum>Qt::RightToLeft</enum>
-              </property>
-              <property name="autoFillBackground">
-               <bool>false</bool>
-              </property>
-              <property name="text">
-               <string>summarize multiple separators</string>
-              </property>
-              <property name="iconSize">
-               <size>
-                <width>16</width>
-                <height>16</height>
-               </size>
-              </property>
-              <property name="checked">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-            <item>
              <layout class="QHBoxLayout" name="horizontalLayout_14">
               <item>
                <widget class="QLabel" name="label_12">
@@ -247,7 +213,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QgsProjectionSelectionWidget" name="mQgsProjectionSelectionWidget" native="true"/>
+               <widget class="QgsProjectionSelectionWidget" name="mQgsProjectionSelectionWidget"/>
               </item>
              </layout>
             </item>
@@ -267,8 +233,8 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>355</width>
-                 <height>502</height>
+                 <width>363</width>
+                 <height>431</height>
                 </rect>
                </property>
                <attribute name="icon">
@@ -512,7 +478,7 @@
                    </widget>
                   </item>
                   <item>
-                   <widget class="QComboBox" name="point_set_name">
+                   <widget class="QComboBox" name="set_name_points">
                     <property name="sizePolicy">
                      <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
                       <horstretch>0</horstretch>
@@ -598,8 +564,8 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>597</width>
-                 <height>180</height>
+                 <width>380</width>
+                 <height>405</height>
                 </rect>
                </property>
                <attribute name="icon">
@@ -615,8 +581,8 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>597</width>
-                 <height>180</height>
+                 <width>380</width>
+                 <height>405</height>
                 </rect>
                </property>
                <attribute name="icon">
@@ -632,8 +598,8 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>597</width>
-                 <height>180</height>
+                 <width>380</width>
+                 <height>405</height>
                 </rect>
                </property>
                <attribute name="icon">
@@ -649,8 +615,8 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>597</width>
-                 <height>180</height>
+                 <width>380</width>
+                 <height>405</height>
                 </rect>
                </property>
                <attribute name="icon">
@@ -707,7 +673,7 @@
   <customwidget>
    <class>QgsProjectionSelectionWidget</class>
    <extends>QWidget</extends>
-   <header>qgis.gui</header>
+   <header>qgsprojectionselectionwidget.h</header>
   </customwidget>
  </customwidgets>
  <tabstops>
@@ -723,7 +689,7 @@
   <tabstop>altitude_points</tabstop>
   <tabstop>strat_points</tabstop>
   <tabstop>strat_age_points</tabstop>
-  <tabstop>point_set_name</tabstop>
+  <tabstop>set_name_points</tabstop>
   <tabstop>comment_points</tabstop>
   <tabstop>separator</tabstop>
   <tabstop>import_columns_points</tabstop>
