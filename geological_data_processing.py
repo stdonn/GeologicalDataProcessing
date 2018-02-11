@@ -308,7 +308,10 @@ class GeologicalDataProcessing:
                                                "Data Files(*.txt *.csv *.data);;Any File Type (*)")
 
         if filename != "":
-            self.dockwidget.import_file.setText(filename)
+            self.dockwidget.import_file.setText("")
+            for tab in self.import_widgets:
+                for item in self.import_widgets[tab]:
+                    item.clear()
 
             import_file = self.dockwidget.import_file.text()
             try:
@@ -326,10 +329,8 @@ class GeologicalDataProcessing:
             if '' in [cols, props, data]:
                 QMessageBox.critical(self.dockwidget, "Import File Error",
                                      "Cannot process import file, wrong file format!")
-                self.dockwidget.import_file.setText("")
-                for tab in self.import_widgets:
-                    for item in self.import_widgets[tab]:
-                        item.clear()
+            else:
+                self.dockwidget.import_file.setText(filename)
 
             for sep in [';', ',', '\t', '.', '-', '_', '/', '\\']:
                 split = cols.split(sep)
@@ -343,6 +344,9 @@ class GeologicalDataProcessing:
                     index = self.dockwidget.separator.findText(sep, Qt.MatchFixedString)
                     if index >= 0:
                         self.dockwidget.separator.setCurrentIndex(index)
+
+    def new_data_file(self):
+        pass
 
     def process_point_import(self, separator):
         # type: (str) -> None
