@@ -36,7 +36,6 @@ from geological_data_processing_dockwidget import GeologicalDataProcessingDockWi
 
 # Initialize Qt resources from file resources.py
 # import is necessary to show icons, as <resources></resources> part had to be deleted from ui file
-import resources_rc
 
 debug = True
 
@@ -232,15 +231,26 @@ class GeologicalDataProcessing:
                 self.dockwidget = GeologicalDataProcessingDockWidget()
 
             # summarize import Widgets
-            self.import_widgets['points'] = (
-                self.dockwidget.easting_points,
-                self.dockwidget.northing_points,
-                self.dockwidget.altitude_points,
-                self.dockwidget.strat_points,
-                self.dockwidget.strat_age_points,
-                self.dockwidget.set_name_points,
-                self.dockwidget.comment_points
-            )
+            self.import_widgets = {
+                'points': (
+                    self.dockwidget.easting_points,
+                    self.dockwidget.northing_points,
+                    self.dockwidget.altitude_points,
+                    self.dockwidget.strat_points,
+                    self.dockwidget.strat_age_points,
+                    self.dockwidget.set_name_points,
+                    self.dockwidget.comment_points
+                ),
+                'lines' : (
+                    self.dockwidget.easting_lines,
+                    self.dockwidget.northing_lines,
+                    self.dockwidget.altitude_lines,
+                    self.dockwidget.strat_lines,
+                    self.dockwidget.strat_age_lines,
+                    self.dockwidget.set_name_lines,
+                    self.dockwidget.comment_lines
+                )
+            }
 
             # connect to provide cleanup on closing of dockwidget
             self.dockwidget.closingPlugin.connect(self.onClosePlugin)
@@ -317,8 +327,9 @@ class GeologicalDataProcessing:
             try:
                 import_file = open(import_file, 'r')
             except IOError:
-                for item in self.import_widgets["points"]:
-                    item.clear()
+                for geometry in self.import_widgets:
+                    for item in self.import_widgets[geometry]:
+                        item.clear()
                 return
 
             cols = import_file.readline().strip()
@@ -404,5 +415,8 @@ class GeologicalDataProcessing:
             _, _, exc_traceback = sys.exc_info()
             text = "Error Message:\n{}\nTraceback:\n{}".format(e.message, ''.join(traceback.format_tb(exc_traceback)))
             # text = "Error Message:\nNone\nTraceback:\n{}".format(traceback.print_exc())
-            self.iface.messageBar().pushMessage("Error", text, level=QgsMessageBar.CRITICAL)
+            self.iface.messageBar().pushMessage("Error",
+                                                "An exception occurred during the process. " +
+                                                "For more details, please take a look to the log windows.",
+                                                level=QgsMessageBar.CRITICAL)
             QgsMessageLog.logMessage(text, level=QgsMessageLog.CRITICAL)
