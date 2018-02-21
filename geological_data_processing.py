@@ -21,6 +21,9 @@
  ***************************************************************************/
 """
 
+# most important -> resources module!
+import resources_rc
+
 import os.path
 import platform
 import sys
@@ -232,24 +235,24 @@ class GeologicalDataProcessing:
 
             # summarize import Widgets
             self.import_widgets = {
-                'points': (
-                    self.dockwidget.easting_points,
-                    self.dockwidget.northing_points,
-                    self.dockwidget.altitude_points,
-                    self.dockwidget.strat_points,
-                    self.dockwidget.strat_age_points,
-                    self.dockwidget.set_name_points,
-                    self.dockwidget.comment_points
-                ),
-                'lines' : (
-                    self.dockwidget.easting_lines,
-                    self.dockwidget.northing_lines,
-                    self.dockwidget.altitude_lines,
-                    self.dockwidget.strat_lines,
-                    self.dockwidget.strat_age_lines,
-                    self.dockwidget.set_name_lines,
-                    self.dockwidget.comment_lines
-                )
+                "Points": {
+                    "easting"  : self.dockwidget.easting_points,
+                    "northing" : self.dockwidget.northing_points,
+                    "altitude" : self.dockwidget.altitude_points,
+                    "strat"    : self.dockwidget.strat_points,
+                    "strat_age": self.dockwidget.strat_age_points,
+                    "set_name" : self.dockwidget.set_name_points,
+                    "comment"  : self.dockwidget.comment_points
+                },
+                "Lines" : {
+                    "easting"  : self.dockwidget.easting_lines,
+                    "northing" : self.dockwidget.northing_lines,
+                    "altitude" : self.dockwidget.altitude_lines,
+                    "strat"    : self.dockwidget.strat_lines,
+                    "strat_age": self.dockwidget.strat_age_lines,
+                    "set_name" : self.dockwidget.set_name_lines,
+                    "comment"  : self.dockwidget.comment_lines
+                }
             }
 
             # connect to provide cleanup on closing of dockwidget
@@ -269,7 +272,8 @@ class GeologicalDataProcessing:
             # 2.1 - Import points
             self.dockwidget.import_columns_points.hide()
             self.dockwidget.separator.addItems([';', ',', '<tabulator>', '.', '-', '_', '/', '\\'])
-            self.dockwidget.separator.currentIndexChanged[str].connect(self.process_point_import)
+            self.dockwidget.separator.currentIndexChanged[str].connect(self.process_import)
+            self.dockwidget.import_type.currentChanged.connect(self.on_import_item_changed_event)
 
     def create_db(self):
         # type: () -> None
@@ -301,6 +305,16 @@ class GeologicalDataProcessing:
                 filename += ".data"
             self.dockwidget.database_file.setText(filename)
 
+    def clear_import_combos(self):
+        # type: () -> None
+        """
+        Clear all import combo boxes
+        :return: Nothing
+        """
+        for key in self.import_widgets:
+            for combo in self.import_widgets[key]:
+                self.import_widgets[key][combo].clear()
+
     def select_data_file(self):
         # type: () -> None
         """
@@ -317,19 +331,17 @@ class GeologicalDataProcessing:
                                                path,
                                                "Data Files(*.txt *.csv *.data);;Any File Type (*)")
 
+        QgsMessageLog.logMessage("Import File: {}".format(filename), level=QgsMessageLog.INFO)
+
         if filename != "":
-            self.dockwidget.import_file.setText("")
-            for tab in self.import_widgets:
-                for item in self.import_widgets[tab]:
-                    item.clear()
+            self.dockwidget.import_file.setText(filename)
+            self.clear_import_combos()
 
             import_file = self.dockwidget.import_file.text()
             try:
                 import_file = open(import_file, 'r')
             except IOError:
-                for geometry in self.import_widgets:
-                    for item in self.import_widgets[geometry]:
-                        item.clear()
+                self.clear_import_combos()
                 return
 
             cols = import_file.readline().strip()
@@ -347,19 +359,17 @@ class GeologicalDataProcessing:
                 split = cols.split(sep)
                 if len(split) < 3:
                     continue
-                elif sep == '\t':
+                if sep == '\t':
                     index = self.dockwidget.separator.findText("<tabulator>", Qt.MatchFixedString)
                     if index >= 0:
                         self.dockwidget.separator.setCurrentIndex(index)
-                else:
-                    index = self.dockwidget.separator.findText(sep, Qt.MatchFixedString)
-                    if index >= 0:
-                        self.dockwidget.separator.setCurrentIndex(index)
+                        break
+                index = self.dockwidget.separator.findText(sep, Qt.MatchFixedString)
+                if index >= 0:
+                    self.dockwidget.separator.setCurrentIndex(index)
+                    break
 
-    def new_data_file(self):
-        pass
-
-    def process_point_import(self, separator):
+    def process_import(self, separator):
         # type: (str) -> None
         try:
             if debug:
@@ -367,10 +377,13 @@ class GeologicalDataProcessing:
             if separator == "<tabulator>":
                 separator = '\t'
 
-            import_file = self.dockwidget.import_file.text()
+            self.clear_import_combos()
+
+            import_file_name = self.dockwidget.import_file.text()
             try:
-                import_file = open(import_file, 'r')
+                import_file = open(import_file_name, 'r')
             except IOError:
+                QgsMessageLog.logMessage("Cannot open file: {}".format(import_file_name), level=QgsMessageLog.INFO)
                 return
 
             cols = import_file.readline().strip().split(separator)
@@ -396,21 +409,29 @@ class GeologicalDataProcessing:
                 QMessageBox.critical(self.dockwidget, "Not enough columns",
                                      "Cannot find enough columns. " +
                                      "Maybe use a different separator or another import file")
-                for item in self.import_widgets["points"]:
-                    item.clear()
+                self.clear_import_combos()
                 return
 
             numbers = [cols[x] for x in nr_cols]
-            self.dockwidget.easting_points.addItems(numbers)
-            self.dockwidget.easting_points.setCurrentIndex(0)
-            self.dockwidget.northing_points.addItems(numbers)
-            self.dockwidget.northing_points.setCurrentIndex(1)
-            self.dockwidget.altitude_points.addItems(numbers)
-            self.dockwidget.altitude_points.setCurrentIndex(2)
-            self.dockwidget.strat_points.addItems([''] + cols)
-            self.dockwidget.strat_age_points.addItems([''] + numbers)
-            self.dockwidget.set_name_points.addItems([''] + cols)
-            self.dockwidget.comment_points.addItems([''] + cols)
+
+            current_item_index = self.dockwidget.import_type.currentIndex()
+            current_item_name = self.dockwidget.import_type.itemText(current_item_index)
+
+            if debug:
+                QgsMessageLog.logMessage("current Item: {}[{}]".format(current_item_name, current_item_index),
+                                         level=QgsMessageLog.INFO)
+
+            if current_item_name in ["Points", "Lines"]:
+                self.import_widgets[current_item_name]["easting"].addItems(numbers)
+                self.import_widgets[current_item_name]["easting"].setCurrentIndex(0)
+                self.import_widgets[current_item_name]["northing"].addItems(numbers)
+                self.import_widgets[current_item_name]["northing"].setCurrentIndex(1)
+                self.import_widgets[current_item_name]["altitude"].addItems([''] + numbers)
+                self.import_widgets[current_item_name]["altitude"].setCurrentIndex(0)
+                self.import_widgets[current_item_name]["strat"].addItems([''] + cols)
+                self.import_widgets[current_item_name]["strat_age"].addItems([''] + numbers)
+                self.import_widgets[current_item_name]["set_name"].addItems([''] + cols)
+                self.import_widgets[current_item_name]["comment"].addItems([''] + cols)
         except Exception as e:
             _, _, exc_traceback = sys.exc_info()
             text = "Error Message:\n{}\nTraceback:\n{}".format(e.message, ''.join(traceback.format_tb(exc_traceback)))
@@ -420,3 +441,12 @@ class GeologicalDataProcessing:
                                                 "For more details, please take a look to the log windows.",
                                                 level=QgsMessageBar.CRITICAL)
             QgsMessageLog.logMessage(text, level=QgsMessageLog.CRITICAL)
+
+    def on_import_item_changed_event(self, _):
+        # type (int) -> None
+        """
+        Calls the process_import slot, if the active QToolBox Item changes in order to reset the combo boxes
+        :param _: current index delivered by the currentChanged signal
+        :return: nothing
+        """
+        self.process_import(self.dockwidget.separator.currentText())
