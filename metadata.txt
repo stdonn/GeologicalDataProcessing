@@ -8,7 +8,7 @@
 
 [general]
 name=Geological Data Processing
-qgisMinimumVersion=2.0
+qgisMinimumVersion=3.0
 description=This plugin connects the python module 'GeologicalToolbox' to QGIS.
 version=0.0.1a
 author=Stephan Donndorf

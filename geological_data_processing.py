@@ -21,24 +21,22 @@
  ***************************************************************************/
 """
 
-# most important -> resources module!
-import resources_rc
-
-import os.path
 import platform
 import sys
 import traceback
 
-from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt
-from PyQt4.QtGui import QAction, QIcon, QFileDialog, QMessageBox
+import os.path
+from PyQt5.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QAction, QFileDialog, QMessageBox
+# noinspection PyUnresolvedReferences
 from qgis.core import QgsMessageLog
-from qgis.gui import QgsMessageBar
 
 # Import the code for the DockWidget
-from geological_data_processing_dockwidget import GeologicalDataProcessingDockWidget
-
+from .geological_data_processing_dockwidget import GeologicalDataProcessingDockWidget
 # Initialize Qt resources from file resources.py
-# import is necessary to show icons, as <resources></resources> part had to be deleted from ui file
+# noinspection PyUnresolvedReferences
+from .resources import *
 
 debug = True
 
@@ -81,11 +79,11 @@ class GeologicalDataProcessing:
         self.toolbar = self.iface.addToolBar(u'GeologicalDataProcessing')
         self.toolbar.setObjectName(u'GeologicalDataProcessing')
 
-        # print "** INITIALIZING GeologicalDataProcessing"
-
         self.pluginIsActive = False
         self.dockwidget = None
-        self.import_widgets = dict()
+
+        # user defined class variables
+        self.__import_widgets = dict()
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -154,6 +152,7 @@ class GeologicalDataProcessing:
 
         icon = QIcon(icon_path)
         action = QAction(icon, text, parent)
+        # noinspection PyUnresolvedReferences
         action.triggered.connect(callback)
         action.setEnabled(enabled_flag)
 
@@ -175,6 +174,7 @@ class GeologicalDataProcessing:
 
         return action
 
+    # noinspection PyPep8Naming
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
@@ -187,6 +187,7 @@ class GeologicalDataProcessing:
 
     # --------------------------------------------------------------------------
 
+    # noinspection PyPep8Naming
     def onClosePlugin(self):
         """Cleanup necessary items here when plugin dockwidget is closed"""
 
@@ -197,7 +198,7 @@ class GeologicalDataProcessing:
 
         # remove this statement if dockwidget is to remain
         # for reuse if plugin is reopened
-        # Commented next statement since it causes QGIS crashe
+        # Commented next statement since it causes QGIS crashes
         # when closing the docked window:
         # self.dockwidget = None
 
@@ -218,7 +219,7 @@ class GeologicalDataProcessing:
 
     # --------------------------------------------------------------------------
 
-    def run(self):
+    def run(self) -> None:
         """Run method that loads and starts the plugin"""
 
         if not self.pluginIsActive:
@@ -233,8 +234,21 @@ class GeologicalDataProcessing:
                 # Create the dockwidget (after translation) and keep reference
                 self.dockwidget = GeologicalDataProcessingDockWidget()
 
+            # connect to provide cleanup on closing of dockwidget
+            self.dockwidget.closingPlugin.connect(self.onClosePlugin)
+
+            # show the dockwidget
+            # TODO: fix to allow choice of dock location
+            self.iface.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget)
+            self.dockwidget.show()
+
+            #
+            # manual added content
+            #
+
             # summarize import Widgets
-            self.import_widgets = {
+            # noinspection SpellCheckingInspection
+            self.__import_widgets = {
                 "Points": {
                     "easting"  : self.dockwidget.easting_points,
                     "northing" : self.dockwidget.northing_points,
@@ -255,19 +269,11 @@ class GeologicalDataProcessing:
                 }
             }
 
-            # connect to provide cleanup on closing of dockwidget
-            self.dockwidget.closingPlugin.connect(self.onClosePlugin)
-
-            # show the dockwidget
-            # TODO: fix to allow choice of dock location
-            self.iface.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget)
-            self.dockwidget.show()
-
             # initialize the gui and connect signals and slots
             # 1 - General
-            self.dockwidget.create_DB_button.clicked.connect(self.create_db)
-            self.dockwidget.select_DB_button.clicked.connect(self.select_db)
-            self.dockwidget.select_data_file_button.clicked.connect(self.select_data_file)
+            self.dockwidget.create_DB_button.clicked.connect(self.on_create_db_clicked)
+            self.dockwidget.select_DB_button.clicked.connect(self.on_select_db)
+            self.dockwidget.select_data_file_button.clicked.connect(self.on_select_data_file)
             # 2 - Import tab
             # 2.1 - Import points
             self.dockwidget.import_columns_points.hide()
@@ -275,73 +281,152 @@ class GeologicalDataProcessing:
             self.dockwidget.separator.currentIndexChanged[str].connect(self.process_import)
             self.dockwidget.import_type.currentChanged.connect(self.on_import_item_changed_event)
 
-    def create_db(self):
-        # type: () -> None
+    #
+    # user defined functions
+    # private functions
+    #
+    def __clear_import_combos(self) -> None:
         """
-        Select a new database which has to be created
+        Clear all import combo boxes
+        :return: Nothing
+        """
+        for key in self.__import_widgets:
+            for combo in self.__import_widgets[key]:
+                self.__import_widgets[key][combo].clear()
 
+    #
+    # public functions
+    #
+    def process_import(self, separator: str) -> None:
+        """
+        process the selected import file and set possible values for column combo boxes
+        :param separator: selected separator
+        :return: Nothing
+        """
+        try:
+            if debug:
+                QgsMessageLog.logMessage("Selected separator: {}".format(separator), level=0)
+            if separator == "<tabulator>":
+                separator = '\t'
+
+            self.__clear_import_combos()
+
+            import_file_name = self.dockwidget.import_file.text()
+            try:
+                import_file = open(import_file_name, 'r')
+            except IOError:
+                QgsMessageLog.logMessage("Cannot open file: {}".format(import_file_name), level=0)
+                return
+
+            cols = import_file.readline().strip().split(separator)
+            props = import_file.readline().strip().split(separator)
+            data = import_file.readline().strip().split(separator)
+
+            if debug:
+                QgsMessageLog.logMessage("cols:\t{}".format(cols), level=0)
+                QgsMessageLog.logMessage("props:\t{}".format(props), level=0)
+                QgsMessageLog.logMessage("data:\t{}".format(data), level=0)
+
+            import_file.close()
+
+            nr_cols = []
+            for col in data:
+                try:
+                    float(col)
+                    nr_cols.append(data.index(col))
+                except ValueError:
+                    pass
+
+            if len(nr_cols) < 3:
+                QMessageBox.critical(self.dockwidget, "Not enough columns",
+                                     "Cannot find enough columns. " +
+                                     "Maybe use a different separator or another import file")
+                self.__clear_import_combos()
+                return
+
+            numbers = [cols[x] for x in nr_cols]
+
+            current_item_index = self.dockwidget.import_type.currentIndex()
+            current_item_name = self.dockwidget.import_type.itemText(current_item_index)
+
+            if debug:
+                QgsMessageLog.logMessage("current Item: {}[{}]".format(current_item_name, current_item_index),
+                                         level=QgsMessageLog.INFO)
+
+            if current_item_name in ["Points", "Lines"]:
+                self.__import_widgets[current_item_name]["easting"].addItems(numbers)
+                self.__import_widgets[current_item_name]["easting"].setCurrentIndex(0)
+                self.__import_widgets[current_item_name]["northing"].addItems(numbers)
+                self.__import_widgets[current_item_name]["northing"].setCurrentIndex(1)
+                self.__import_widgets[current_item_name]["altitude"].addItems([''] + numbers)
+                self.__import_widgets[current_item_name]["altitude"].setCurrentIndex(0)
+                # noinspection SpellCheckingInspection
+                self.__import_widgets[current_item_name]["strat"].addItems([''] + cols)
+                # noinspection SpellCheckingInspection
+                self.__import_widgets[current_item_name]["strat_age"].addItems([''] + numbers)
+                self.__import_widgets[current_item_name]["set_name"].addItems([''] + cols)
+                self.__import_widgets[current_item_name]["comment"].addItems([''] + cols)
+        except Exception as e:
+            _, _, exc_traceback = sys.exc_info()
+            text = "Error Message:\n{}\nTraceback:\n{}".format(str(e), ''.join(traceback.format_tb(exc_traceback)))
+            # text = "Error Message:\nNone\nTraceback:\n{}".format(traceback.print_exc())
+            self.iface.messageBar().pushMessage("Error",
+                                                "An exception occurred during the process. " +
+                                                "For more details, please take a look to the log windows.",
+                                                level=2)
+            QgsMessageLog.logMessage(text, level=2)
+
+    #
+    # slots
+    #
+    def on_create_db_clicked(self) -> None:
+        """
+        slot for creating a new database
         :return: Nothing
         """
         filename = QFileDialog.getSaveFileName(self.dockwidget, "Select database file", "",
                                                "Databases(*.db *.sqlite *.data);;Any File Type (*)")
 
         if filename != "":
+            # noinspection PyTypeChecker
             if os.path.splitext(filename)[-1].lower().lstrip('.') not in ["db", "data", "sqlite"]:
                 filename += ".data"
             self.dockwidget.database_file.setText(filename)
 
-    def select_db(self):
-        # type: () -> None
+    def on_import_item_changed_event(self, _: int) -> None:
         """
-        slot for selecting a sqlite database file and set the result to the related lineedit
-
-        :return: Nothing
+        Calls the process_import function, if the active QToolBox Item changes in order to reset the combo boxes
+        :param _: unused index, delivered by the currentChanged signal
+        :return: nothing
         """
-        filename = QFileDialog.getOpenFileName(self.dockwidget, "Select database file", "",
-                                               "Databases(*.db *.sqlite *.data);;Any File Type (*)")
+        self.process_import(self.dockwidget.separator.currentText())
 
-        if filename != "":
-            if os.path.splitext(filename)[-1].lower().lstrip('.') not in ["db", "data", "sqlite"]:
-                filename += ".data"
-            self.dockwidget.database_file.setText(filename)
-
-    def clear_import_combos(self):
-        # type: () -> None
-        """
-        Clear all import combo boxes
-        :return: Nothing
-        """
-        for key in self.import_widgets:
-            for combo in self.import_widgets[key]:
-                self.import_widgets[key][combo].clear()
-
-    def select_data_file(self):
-        # type: () -> None
+    def on_select_data_file(self) -> None:
         """
         slot for selecting an import data file and processing the corresponding fields inside the import data tab.
-
         :return: Nothing
         """
         path = u"/Users/stephan/Documents/work/Dissertation/PythonModules/GeologicalToolbox/GeologicalToolbox/" + \
                u"tests/test_data/"
         if platform.system() == "Windows":
+            # noinspection SpellCheckingInspection
             path = u"C:/Programmieren/GeologicalToolbox/GeologicalToolbox/tests/test_data"
 
         filename = QFileDialog.getOpenFileName(self.dockwidget, "Select data file",
                                                path,
                                                "Data Files(*.txt *.csv *.data);;Any File Type (*)")
 
-        QgsMessageLog.logMessage("Import File: {}".format(filename), level=QgsMessageLog.INFO)
+        QgsMessageLog.logMessage("Import File: {}".format(filename), level=0)
 
         if filename != "":
             self.dockwidget.import_file.setText(filename)
-            self.clear_import_combos()
+            self.__clear_import_combos()
 
             import_file = self.dockwidget.import_file.text()
             try:
                 import_file = open(import_file, 'r')
             except IOError:
-                self.clear_import_combos()
+                self.__clear_import_combos()
                 return
 
             cols = import_file.readline().strip()
@@ -369,84 +454,16 @@ class GeologicalDataProcessing:
                     self.dockwidget.separator.setCurrentIndex(index)
                     break
 
-    def process_import(self, separator):
-        # type: (str) -> None
-        try:
-            if debug:
-                QgsMessageLog.logMessage("Selected separator: {}".format(separator), level=QgsMessageLog.INFO)
-            if separator == "<tabulator>":
-                separator = '\t'
-
-            self.clear_import_combos()
-
-            import_file_name = self.dockwidget.import_file.text()
-            try:
-                import_file = open(import_file_name, 'r')
-            except IOError:
-                QgsMessageLog.logMessage("Cannot open file: {}".format(import_file_name), level=QgsMessageLog.INFO)
-                return
-
-            cols = import_file.readline().strip().split(separator)
-            props = import_file.readline().strip().split(separator)
-            data = import_file.readline().strip().split(separator)
-
-            if debug:
-                QgsMessageLog.logMessage("cols:\t{}".format(cols), level=QgsMessageLog.INFO)
-                QgsMessageLog.logMessage("props:\t{}".format(props), level=QgsMessageLog.INFO)
-                QgsMessageLog.logMessage("data:\t{}".format(data), level=QgsMessageLog.INFO)
-
-            import_file.close()
-
-            nr_cols = []
-            for col in data:
-                try:
-                    float(col)
-                    nr_cols.append(data.index(col))
-                except ValueError:
-                    pass
-
-            if len(nr_cols) < 3:
-                QMessageBox.critical(self.dockwidget, "Not enough columns",
-                                     "Cannot find enough columns. " +
-                                     "Maybe use a different separator or another import file")
-                self.clear_import_combos()
-                return
-
-            numbers = [cols[x] for x in nr_cols]
-
-            current_item_index = self.dockwidget.import_type.currentIndex()
-            current_item_name = self.dockwidget.import_type.itemText(current_item_index)
-
-            if debug:
-                QgsMessageLog.logMessage("current Item: {}[{}]".format(current_item_name, current_item_index),
-                                         level=QgsMessageLog.INFO)
-
-            if current_item_name in ["Points", "Lines"]:
-                self.import_widgets[current_item_name]["easting"].addItems(numbers)
-                self.import_widgets[current_item_name]["easting"].setCurrentIndex(0)
-                self.import_widgets[current_item_name]["northing"].addItems(numbers)
-                self.import_widgets[current_item_name]["northing"].setCurrentIndex(1)
-                self.import_widgets[current_item_name]["altitude"].addItems([''] + numbers)
-                self.import_widgets[current_item_name]["altitude"].setCurrentIndex(0)
-                self.import_widgets[current_item_name]["strat"].addItems([''] + cols)
-                self.import_widgets[current_item_name]["strat_age"].addItems([''] + numbers)
-                self.import_widgets[current_item_name]["set_name"].addItems([''] + cols)
-                self.import_widgets[current_item_name]["comment"].addItems([''] + cols)
-        except Exception as e:
-            _, _, exc_traceback = sys.exc_info()
-            text = "Error Message:\n{}\nTraceback:\n{}".format(e.message, ''.join(traceback.format_tb(exc_traceback)))
-            # text = "Error Message:\nNone\nTraceback:\n{}".format(traceback.print_exc())
-            self.iface.messageBar().pushMessage("Error",
-                                                "An exception occurred during the process. " +
-                                                "For more details, please take a look to the log windows.",
-                                                level=QgsMessageBar.CRITICAL)
-            QgsMessageLog.logMessage(text, level=QgsMessageLog.CRITICAL)
-
-    def on_import_item_changed_event(self, _):
-        # type (int) -> None
+    def on_select_db(self) -> None:
         """
-        Calls the process_import slot, if the active QToolBox Item changes in order to reset the combo boxes
-        :param _: current index delivered by the currentChanged signal
-        :return: nothing
+        slot for selecting a sqlite database file and set the result to the related lineedit
+        :return: Nothing
         """
-        self.process_import(self.dockwidget.separator.currentText())
+        filename = QFileDialog.getOpenFileName(self.dockwidget, "Select database file", "",
+                                               "Databases(*.db *.sqlite *.data);;Any File Type (*)")
+
+        if filename != "":
+            # noinspection PyTypeChecker
+            if os.path.splitext(filename)[-1].lower().lstrip('.') not in ["db", "data", "sqlite"]:
+                filename += ".data"
+            self.dockwidget.database_file.setText(filename)

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>426</width>
+    <width>420</width>
     <height>900</height>
    </rect>
   </property>
@@ -20,13 +20,46 @@
   <property name="locale">
    <locale language="English" country="UnitedStates"/>
   </property>
+  <property name="floating">
+   <bool>false</bool>
+  </property>
   <property name="windowTitle">
    <string>Geological Data Processing</string>
   </property>
   <widget class="QWidget" name="dockWidgetContents">
    <layout class="QVBoxLayout" name="verticalLayout_2">
+    <property name="spacing">
+     <number>6</number>
+    </property>
+    <property name="leftMargin">
+     <number>9</number>
+    </property>
+    <property name="topMargin">
+     <number>9</number>
+    </property>
+    <property name="rightMargin">
+     <number>9</number>
+    </property>
+    <property name="bottomMargin">
+     <number>9</number>
+    </property>
     <item>
      <layout class="QVBoxLayout" name="verticalLayout">
+      <property name="spacing">
+       <number>6</number>
+      </property>
+      <property name="leftMargin">
+       <number>0</number>
+      </property>
+      <property name="topMargin">
+       <number>0</number>
+      </property>
+      <property name="rightMargin">
+       <number>0</number>
+      </property>
+      <property name="bottomMargin">
+       <number>0</number>
+      </property>
       <item alignment="Qt::AlignTop">
        <widget class="QLabel" name="label">
         <property name="sizePolicy">
@@ -233,7 +266,7 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>363</width>
+                 <width>357</width>
                  <height>431</height>
                 </rect>
                </property>
@@ -564,7 +597,7 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>380</width>
+                 <width>374</width>
                  <height>428</height>
                 </rect>
                </property>
@@ -872,7 +905,7 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>380</width>
+                 <width>374</width>
                  <height>428</height>
                 </rect>
                </property>
@@ -889,7 +922,7 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>380</width>
+                 <width>374</width>
                  <height>428</height>
                 </rect>
                </property>
@@ -906,7 +939,7 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>380</width>
+                 <width>374</width>
                  <height>428</height>
                 </rect>
                </property>
@@ -974,7 +1007,6 @@
   <tabstop>select_data_file_button</tabstop>
   <tabstop>working_dir</tabstop>
   <tabstop>working_dir_button</tabstop>
-  <tabstop>mQgsProjectionSelectionWidget</tabstop>
   <tabstop>easting_points</tabstop>
   <tabstop>northing_points</tabstop>
   <tabstop>altitude_points</tabstop>
@@ -983,7 +1015,6 @@
   <tabstop>set_name_points</tabstop>
   <tabstop>comment_points</tabstop>
   <tabstop>separator</tabstop>
-  <tabstop>import_columns_points</tabstop>
   <tabstop>start_import_button</tabstop>
  </tabstops>
  <resources>

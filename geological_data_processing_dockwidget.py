@@ -23,17 +23,14 @@
 
 import os
 
-from PyQt4 import QtGui, uic
-from PyQt4.QtCore import pyqtSignal
+from PyQt5 import QtGui, QtWidgets, uic
+from PyQt5.QtCore import pyqtSignal
 
-FORM_CLASS, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), 'geological_data_processing_dockwidget_base.ui'))
-
-
-# from geological_data_processing_dockwidget_base import Ui_GeologicalDataProcessingDockWidgetBase
+FORM_CLASS, _ = uic.loadUiType(os.path.join(
+        os.path.dirname(__file__), 'geological_data_processing_dockwidget_base.ui'))
 
 
-# class GeologicalDataProcessingDockWidget(QtGui.QDockWidget, Ui_GeologicalDataProcessingDockWidgetBase):
-class GeologicalDataProcessingDockWidget(QtGui.QDockWidget, FORM_CLASS):
+class GeologicalDataProcessingDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     closingPlugin = pyqtSignal()
 
     def __init__(self, parent=None):
