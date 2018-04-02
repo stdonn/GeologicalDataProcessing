@@ -25,6 +25,7 @@ import platform
 import sys
 import traceback
 
+# noinspection PyUnresolvedReferences
 import os.path
 from PyQt5.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt
 from PyQt5.QtGui import QIcon
@@ -305,6 +306,7 @@ class GeologicalDataProcessing:
         """
         try:
             if debug:
+                # noinspection PyCallByClass, PyArgumentList
                 QgsMessageLog.logMessage("Selected separator: {}".format(separator), level=0)
             if separator == "<tabulator>":
                 separator = '\t'
@@ -315,6 +317,7 @@ class GeologicalDataProcessing:
             try:
                 import_file = open(import_file_name, 'r')
             except IOError:
+                # noinspection PyCallByClass, PyArgumentList
                 QgsMessageLog.logMessage("Cannot open file: {}".format(import_file_name), level=0)
                 return
 
@@ -323,8 +326,11 @@ class GeologicalDataProcessing:
             data = import_file.readline().strip().split(separator)
 
             if debug:
+                # noinspection PyCallByClass, PyArgumentList
                 QgsMessageLog.logMessage("cols:\t{}".format(cols), level=0)
+                # noinspection PyCallByClass, PyArgumentList
                 QgsMessageLog.logMessage("props:\t{}".format(props), level=0)
+                # noinspection PyCallByClass, PyArgumentList
                 QgsMessageLog.logMessage("data:\t{}".format(data), level=0)
 
             import_file.close()
@@ -350,8 +356,8 @@ class GeologicalDataProcessing:
             current_item_name = self.dockwidget.import_type.itemText(current_item_index)
 
             if debug:
-                QgsMessageLog.logMessage("current Item: {}[{}]".format(current_item_name, current_item_index),
-                                         level=QgsMessageLog.INFO)
+                # noinspection PyCallByClass, PyArgumentList
+                QgsMessageLog.logMessage("current Item: {}[{}]".format(current_item_name, current_item_index), level=0)
 
             if current_item_name in ["Points", "Lines"]:
                 self.__import_widgets[current_item_name]["easting"].addItems(numbers)
@@ -374,6 +380,7 @@ class GeologicalDataProcessing:
                                                 "An exception occurred during the process. " +
                                                 "For more details, please take a look to the log windows.",
                                                 level=2)
+            # noinspection PyCallByClass, PyArgumentList
             QgsMessageLog.logMessage(text, level=2)
 
     #
@@ -412,10 +419,10 @@ class GeologicalDataProcessing:
             # noinspection SpellCheckingInspection
             path = u"C:/Programmieren/GeologicalToolbox/GeologicalToolbox/tests/test_data"
 
-        filename = QFileDialog.getOpenFileName(self.dockwidget, "Select data file",
-                                               path,
+        filename = QFileDialog.getOpenFileName(self.dockwidget, "Select data file", path,
                                                "Data Files(*.txt *.csv *.data);;Any File Type (*)")
 
+        # noinspection PyCallByClass, PyArgumentList
         QgsMessageLog.logMessage("Import File: {}".format(filename), level=0)
 
         if filename != "":
