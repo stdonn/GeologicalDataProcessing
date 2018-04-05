@@ -2,8 +2,10 @@
 Module for basic exception handling
 """
 
-import sys, traceback
+import sys
+import traceback
 
+from PyQt5.QtWidgets import QPushButton
 # noinspection PyUnresolvedReferences
 from qgis.core import QgisInterface, QgsMessageLog
 
@@ -40,9 +42,15 @@ class ExceptionHandling:
         :param iface: QgisInterface representation
         :return: Nothing
         """
-        iface.messageBar().pushMessage("Error",
-                                       "An exception occurred during the process. " +
-                                       "For more details, please take a look to the log windows.",
-                                       level=2)
+        widget = iface.messageBar().createMessage("Error",
+                                                  "An exception occurred during the process. " +
+                                                  "For more details, please take a look to the log windows.")
+        button = QPushButton(widget)
+        button.setText("Show log windows")
+        # noinspection PyUnresolvedReferences
+        button.pressed.connect(self.iface.openMessageLog)
+        widget.layout().addWidget(button)
+        iface.messageBar().pushWidget(widget, level=2)
+
         # noinspection PyCallByClass, PyArgumentList
         QgsMessageLog.logMessage(self.last_exception, level=2)
