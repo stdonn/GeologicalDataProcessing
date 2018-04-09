@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 """
 Module for basic exception handling
 """

@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 """
 Defines controller for the data import
 """

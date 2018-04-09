@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 """
 Python Module for pushing debug messages to QGIS
 """

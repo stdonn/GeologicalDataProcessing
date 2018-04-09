@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 """
 Defines models for the data import
 """
@@ -23,6 +24,9 @@ class ImportModelInterface:
         self.__data_file = ""
         self.__separator = ';'
         self.__working_dir = ""
+
+    # signals
+    model_changed = pyqtSignal(name='model_changed')
 
     # setter and getter
 
@@ -133,9 +137,6 @@ class PointImportModel(ImportModelInterface):
 
     def __init__(self):
         super().__init__()
-
-    # signals
-    model_changed = pyqtSignal(name='model_changed')
 
     def get_column_index(self, name: str) -> int:
         """
