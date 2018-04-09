@@ -8,7 +8,9 @@ import traceback
 
 from PyQt5.QtWidgets import QPushButton
 # noinspection PyUnresolvedReferences
-from qgis.core import QgisInterface, QgsMessageLog
+from qgis.core import QgsMessageLog
+# noinspection PyUnresolvedReferences
+from qgis.gui import QgisInterface
 
 
 class ExceptionHandling:
@@ -18,8 +20,7 @@ class ExceptionHandling:
     __instance = None
     last_exception = None
 
-    # noinspection PyUnresolvedReferences
-    def __new__(cls, e: Exception = None) -> ExceptionHandling:
+    def __new__(cls, e: Exception = None):
         if cls.__instance is None:
             cls.__instance = object.__new__(cls)
 

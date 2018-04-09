@@ -21,8 +21,7 @@ class QGISDebugLog:
     __logfile = ""
     __to_file = False
 
-    # noinspection PyUnresolvedReferences
-    def __new__(cls) -> QGISDebugLog:
+    def __new__(cls):
         """
         Creates a new object instance if no object exists or updates the existing one.
         :return: The single instance of this class
