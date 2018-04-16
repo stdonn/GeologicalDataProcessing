@@ -282,6 +282,8 @@ class GeologicalDataProcessing:
             self.dockwidget.separator.currentIndexChanged[str].connect(self.process_import)
             self.dockwidget.import_type.currentChanged.connect(self.on_import_item_changed_event)
 
+            self.dockwidget.start_tests_button.clicked.connect(self.on_start_tests)
+
     #
     # user defined functions
     # private functions
@@ -474,3 +476,10 @@ class GeologicalDataProcessing:
             if os.path.splitext(filename)[-1].lower().lstrip('.') not in ["db", "data", "sqlite"]:
                 filename += ".data"
             self.dockwidget.database_file.setText(filename)
+
+    def on_start_tests(self) -> None:
+        """
+        start a test suite
+        :return: Nothing
+        """
+        pass

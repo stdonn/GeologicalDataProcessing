@@ -20,7 +20,7 @@ class ExceptionHandling:
     __instance = None
     last_exception = None
 
-    def __new__(cls, e: Exception = None):
+    def __new__(cls, e: Exception = None) -> "ExceptionHandling":
         if cls.__instance is None:
             cls.__instance = object.__new__(cls)
 

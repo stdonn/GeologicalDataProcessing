@@ -21,7 +21,7 @@ class QGISDebugLog:
     __logfile = ""
     __to_file = False
 
-    def __new__(cls):
+    def __new__(cls) -> "QGISDebugLog":
         """
         Creates a new object instance if no object exists or updates the existing one.
         :return: The single instance of this class

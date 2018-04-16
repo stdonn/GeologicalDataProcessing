@@ -30,6 +30,12 @@ class TestExceptionHandlingClass(unittest.TestCase):
         self.assertEqual(object_1, object_2)
         self.assertEqual(id(object_1), id(object_2))
 
+        try:
+            float("a")
+        except ValueError as e:
+            exept = ExceptionHandling(e)
+            print(str(exept))
+
     def tearDown(self) -> None:
         """
         Empty function, nothing to shutdown after the testing process
