@@ -22,11 +22,13 @@
 """
 
 import platform
+import os.path
 import sys
 import traceback
+import unittest
+from io import StringIO
 
 # noinspection PyUnresolvedReferences
-import os.path
 from PyQt5.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QAction, QFileDialog, QMessageBox
@@ -34,10 +36,14 @@ from PyQt5.QtWidgets import QAction, QFileDialog, QMessageBox
 from qgis.core import QgsMessageLog
 
 # Import the code for the DockWidget
-from .geological_data_processing_dockwidget import GeologicalDataProcessingDockWidget
+from GeologicalDataProcessing.geological_data_processing_dockwidget import GeologicalDataProcessingDockWidget
+from GeologicalDataProcessing.miscellaneous.QGISDebugLog import QGISDebugLog
 # Initialize Qt resources from file resources.py
 # noinspection PyUnresolvedReferences
-from .resources import *
+from GeologicalDataProcessing.resources import *
+
+# import tests
+from GeologicalDataProcessing.tests.miscellaneouse.test_ExceptionHandling import TestExceptionHandlingClass
 
 debug = True
 
@@ -482,4 +488,19 @@ class GeologicalDataProcessing:
         start a test suite
         :return: Nothing
         """
-        pass
+        debug_log = QGISDebugLog()
+        debug_log.qgis_iface = self.iface
+        debug_log.save_to_file = True
+
+        stream = StringIO()
+        runner = unittest.TextTestRunner(stream=stream)
+        result = runner.run(unittest.makeSuite(TestExceptionHandlingClass))
+
+        debug_log.push_message("logfile: ", debug_log.logfile)
+        debug_log.push_message("Test runs: ", str(result.testsRun))
+        debug_log.push_message("Test errors: ", str(result.errors))
+        for failure in result.failures:
+            debug_log.push_message("Failure: ", str(failure))
+
+        stream.seek(0)
+        debug_log.push_message("Test output", stream.read())

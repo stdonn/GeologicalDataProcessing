@@ -114,9 +114,9 @@ class QGISDebugLog:
             return
 
         if self.__logfile == "":
-            cur_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            # cur_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             tempdir = '/tmp' if platform.system() == 'Darwin' else tempfile.gettempdir()
-            self.__logfile = os.path.join(tempdir, cur_time + "_GeologicalDataProcessing.log")
+            self.__logfile = os.path.join(tempdir, "GeologicalDataProcessing.log")
 
     @property
     def qgis_iface(self) -> QgisInterface or None:

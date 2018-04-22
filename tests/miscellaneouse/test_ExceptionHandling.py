@@ -5,7 +5,7 @@ Module for unittests of the ExceptionHandling module
 
 import unittest
 
-from miscellaneous.ExceptionHandling import ExceptionHandling
+from GeologicalDataProcessing.miscellaneous.ExceptionHandling import ExceptionHandling
 
 class TestExceptionHandlingClass(unittest.TestCase):
     """
@@ -29,7 +29,7 @@ class TestExceptionHandlingClass(unittest.TestCase):
         object_2 = ExceptionHandling()
         self.assertEqual(object_1, object_2)
         self.assertEqual(id(object_1), id(object_2))
-
+        
         try:
             float("a")
         except ValueError as e:
