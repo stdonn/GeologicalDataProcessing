@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 """
-Defines models for the data import
+Defines models for the data import_tests
 """
 
 import os
@@ -11,7 +11,7 @@ from typing import List
 
 class ImportModelInterface:
     """
-    Interface class for all import models
+    Interface class for all import_tests models
     """
 
     __separators = [';', ',', '\t', '.', '-', '_', '/', '\\']

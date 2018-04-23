@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 """
-Defines controller for the data import
+Defines controller for the data import_tests
 """
 
 from geological_data_processing_dockwidget import GeologicalDataProcessingDockWidget
@@ -9,7 +9,7 @@ from miscellaneous.ExceptionHandling import ExceptionHandling
 
 class ImportControllersInterface:
     """
-    Basic interface for all import controller
+    Basic interface for all import_tests controller
     """
 
     def __init__(self, model: ImportModelInterface = None, view: GeologicalDataProcessingDockWidget = None) -> None:
@@ -38,7 +38,7 @@ class PointImportController(ImportControllersInterface):
 
     def on_import_file_changed(self, filename:str) -> None:
         """
-                process the selected import file and set possible values for column combo boxes
+                process the selected import_tests file and set possible values for column combo boxes
                 :param separator: selected separator
                 :return: Nothing
                 """
@@ -84,7 +84,7 @@ class PointImportController(ImportControllersInterface):
             if len(nr_cols) < 3:
                 QMessageBox.critical(self.dockwidget, "Not enough columns",
                                      "Cannot find enough columns. " +
-                                     "Maybe use a different separator or another import file")
+                                     "Maybe use a different separator or another import_tests file")
                 self.__clear_import_combos()
                 return
 

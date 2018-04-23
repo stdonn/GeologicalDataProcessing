@@ -11,7 +11,6 @@ class TestExceptionHandlingClass(unittest.TestCase):
     """
     This is a unittest class for the miscellaneous.ExceptionHandling.ExceptionHandling class
     """
-
     def setUp(self) -> None:
         """
         Currently nothing to initialize
@@ -29,12 +28,6 @@ class TestExceptionHandlingClass(unittest.TestCase):
         object_2 = ExceptionHandling()
         self.assertEqual(object_1, object_2)
         self.assertEqual(id(object_1), id(object_2))
-        
-        try:
-            float("a")
-        except ValueError as e:
-            exept = ExceptionHandling(e)
-            print(str(exept))
 
     def tearDown(self) -> None:
         """
@@ -43,3 +36,6 @@ class TestExceptionHandlingClass(unittest.TestCase):
         :return: Nothing
         """
         pass
+
+if __name__ == "__main__":
+    unittest.main()

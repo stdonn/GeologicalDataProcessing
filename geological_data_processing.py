@@ -22,6 +22,7 @@
 """
 
 import platform
+# noinspection PyUnresolvedReferences
 import os.path
 import sys
 import traceback
@@ -44,6 +45,7 @@ from GeologicalDataProcessing.resources import *
 
 # import tests
 from GeologicalDataProcessing.tests.miscellaneouse.test_ExceptionHandling import TestExceptionHandlingClass
+from GeologicalDataProcessing.tests.import_tests.test_point_import import TestPointImportClass
 
 debug = True
 
@@ -253,7 +255,7 @@ class GeologicalDataProcessing:
             # manual added content
             #
 
-            # summarize import Widgets
+            # summarize import_tests Widgets
             # noinspection SpellCheckingInspection
             self.__import_widgets = {
                 "Points": {
@@ -296,7 +298,7 @@ class GeologicalDataProcessing:
     #
     def __clear_import_combos(self) -> None:
         """
-        Clear all import combo boxes
+        Clear all import_tests combo boxes
         :return: Nothing
         """
         for key in self.__import_widgets:
@@ -308,7 +310,7 @@ class GeologicalDataProcessing:
     #
     def process_import(self, separator: str) -> None:
         """
-        process the selected import file and set possible values for column combo boxes
+        process the selected import_tests file and set possible values for column combo boxes
         :param separator: selected separator
         :return: Nothing
         """
@@ -354,7 +356,7 @@ class GeologicalDataProcessing:
             if len(nr_cols) < 3:
                 QMessageBox.critical(self.dockwidget, "Not enough columns",
                                      "Cannot find enough columns. " +
-                                     "Maybe use a different separator or another import file")
+                                     "Maybe use a different separator or another import_tests file")
                 self.__clear_import_combos()
                 return
 
@@ -418,7 +420,7 @@ class GeologicalDataProcessing:
 
     def on_select_data_file(self) -> None:
         """
-        slot for selecting an import data file and processing the corresponding fields inside the import data tab.
+        slot for selecting an import_tests data file and processing the corresponding fields inside the import_tests data tab.
         :return: Nothing
         """
         path = u"/Users/stephan/Documents/work/Dissertation/PythonModules/GeologicalToolbox/GeologicalToolbox/" + \
@@ -451,7 +453,7 @@ class GeologicalDataProcessing:
 
             if '' in [cols, props, data]:
                 QMessageBox.critical(self.dockwidget, "Import File Error",
-                                     "Cannot process import file, wrong file format!")
+                                     "Cannot process import_tests file, wrong file format!")
             else:
                 self.dockwidget.import_file.setText(filename)
 
@@ -493,14 +495,27 @@ class GeologicalDataProcessing:
         debug_log.save_to_file = True
 
         stream = StringIO()
+        loader = unittest.TestLoader()
         runner = unittest.TextTestRunner(stream=stream)
-        result = runner.run(unittest.makeSuite(TestExceptionHandlingClass))
+        suite = unittest.TestSuite()
 
-        debug_log.push_message("logfile: ", debug_log.logfile)
-        debug_log.push_message("Test runs: ", str(result.testsRun))
-        debug_log.push_message("Test errors: ", str(result.errors))
-        for failure in result.failures:
-            debug_log.push_message("Failure: ", str(failure))
+        suite.addTests(loader.loadTestsFromTestCase(TestExceptionHandlingClass))
+
+        test_cases = loader.getTestCaseNames(TestPointImportClass)
+        for name in test_cases:
+            suite.addTest(TestPointImportClass(name, iface=self.iface, dockwidget=self.dockwidget))
+
+        # result = runner.run(unittest.makeSuite(TestExceptionHandlingClass))
+        result = runner.run(suite)
+
+        level = 0
+        if len(result.errors) > 0 or len(result.failures) > 0:
+            level = 2
+
+        debug_log.push_message("logfile", debug_log.logfile)
+        debug_log.push_message("Test runs", str(result.testsRun))
+        debug_log.push_message("Test errors", str(len(result.errors)), level=level)
+        debug_log.push_message("Failures", str(len(result.failures)), level=level)
 
         stream.seek(0)
-        debug_log.push_message("Test output", stream.read())
+        debug_log.push_message("Test output", '\n' + str(stream.read()), level=level)
