@@ -3,9 +3,13 @@
 Defines controller for the data import_tests
 """
 
-from geological_data_processing_dockwidget import GeologicalDataProcessingDockWidget
-from gui.models.ImportModels import ImportModelInterface, PointImportModel
-from miscellaneous.ExceptionHandling import ExceptionHandling
+from GeologicalDataProcessing.geological_data_processing_dockwidget import GeologicalDataProcessingDockWidget
+from GeologicalDataProcessing.gui.models.ImportModels import ImportModelInterface, PointImportModel
+from GeologicalDataProcessing.miscellaneous.ExceptionHandling import ExceptionHandling
+
+# miscellaneous
+from GeologicalDataProcessing.config import debug
+
 
 class ImportControllersInterface:
     """

@@ -9,6 +9,7 @@ import unittest
 from GeologicalDataProcessing.geological_data_processing_dockwidget import GeologicalDataProcessingDockWidget
 import GeologicalDataProcessing.tests.test_data as test_data
 
+# noinspection PyUnresolvedReferences
 from qgis.gui import QgisInterface
 
 class TestPointImportClass(unittest.TestCase):

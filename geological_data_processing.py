@@ -43,11 +43,15 @@ from GeologicalDataProcessing.miscellaneous.QGISDebugLog import QGISDebugLog
 # noinspection PyUnresolvedReferences
 from GeologicalDataProcessing.resources import *
 
+#import MVC-Classes
+from GeologicalDataProcessing.gui.controller.ImportController import PointImportController
+
 # import tests
 from GeologicalDataProcessing.tests.miscellaneouse.test_ExceptionHandling import TestExceptionHandlingClass
 from GeologicalDataProcessing.tests.import_tests.test_point_import import TestPointImportClass
 
-debug = True
+# miscellaneous
+from GeologicalDataProcessing.config import debug
 
 
 class GeologicalDataProcessing:
