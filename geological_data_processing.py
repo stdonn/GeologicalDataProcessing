@@ -28,6 +28,7 @@ import sys
 import traceback
 import unittest
 from io import StringIO
+from typing import Tuple
 
 # noinspection PyUnresolvedReferences
 from PyQt5.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt
@@ -43,8 +44,10 @@ from GeologicalDataProcessing.miscellaneous.QGISDebugLog import QGISDebugLog
 # noinspection PyUnresolvedReferences
 from GeologicalDataProcessing.resources import *
 
-#import MVC-Classes
+# import MVC-Classes
 from GeologicalDataProcessing.gui.controller.ImportController import PointImportController
+from GeologicalDataProcessing.gui.models.ImportModels import PointImportModel
+from GeologicalDataProcessing.gui.views.ImportViews import PointImportView
 
 # import tests
 from GeologicalDataProcessing.tests.miscellaneouse.test_ExceptionHandling import TestExceptionHandlingClass
@@ -74,9 +77,9 @@ class GeologicalDataProcessing:
         # initialize locale
         locale = QSettings().value('locale/userLocale')[0:2]
         locale_path = os.path.join(
-                self.plugin_dir,
-                'i18n',
-                'GeologicalDataProcessing_{}.qm'.format(locale))
+            self.plugin_dir,
+            'i18n',
+            'GeologicalDataProcessing_{}.qm'.format(locale))
 
         if os.path.exists(locale_path):
             self.translator = QTranslator()
@@ -97,6 +100,11 @@ class GeologicalDataProcessing:
 
         # user defined class variables
         self.__import_widgets = dict()
+
+        # save model, view and controller instances
+        self.__controllers = dict()
+        self.__models = dict()
+        self.__views = dict()
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -180,8 +188,8 @@ class GeologicalDataProcessing:
 
         if add_to_menu:
             self.iface.addPluginToMenu(
-                    self.menu,
-                    action)
+                self.menu,
+                action)
 
         self.actions.append(action)
 
@@ -193,10 +201,10 @@ class GeologicalDataProcessing:
 
         icon_path = ':/plugins/GeologicalDataProcessing/icon.png'
         self.add_action(
-                icon_path,
-                text=self.tr(u'Geological Data Processing'),
-                callback=self.run,
-                parent=self.iface.mainWindow())
+            icon_path,
+            text=self.tr(u'Geological Data Processing'),
+            callback=self.run,
+            parent=self.iface.mainWindow())
 
     # --------------------------------------------------------------------------
 
@@ -224,8 +232,8 @@ class GeologicalDataProcessing:
 
         for action in self.actions:
             self.iface.removePluginMenu(
-                    self.tr(u'&Geological Data Processing'),
-                    action)
+                self.tr(u'&Geological Data Processing'),
+                action)
             self.iface.removeToolBarIcon(action)
         # remove the toolbar
         del self.toolbar
@@ -263,22 +271,22 @@ class GeologicalDataProcessing:
             # noinspection SpellCheckingInspection
             self.__import_widgets = {
                 "Points": {
-                    "easting"  : self.dockwidget.easting_points,
-                    "northing" : self.dockwidget.northing_points,
-                    "altitude" : self.dockwidget.altitude_points,
-                    "strat"    : self.dockwidget.strat_points,
+                    "easting": self.dockwidget.easting_points,
+                    "northing": self.dockwidget.northing_points,
+                    "altitude": self.dockwidget.altitude_points,
+                    "strat": self.dockwidget.strat_points,
                     "strat_age": self.dockwidget.strat_age_points,
-                    "set_name" : self.dockwidget.set_name_points,
-                    "comment"  : self.dockwidget.comment_points
+                    "set_name": self.dockwidget.set_name_points,
+                    "comment": self.dockwidget.comment_points
                 },
-                "Lines" : {
-                    "easting"  : self.dockwidget.easting_lines,
-                    "northing" : self.dockwidget.northing_lines,
-                    "altitude" : self.dockwidget.altitude_lines,
-                    "strat"    : self.dockwidget.strat_lines,
+                "Lines": {
+                    "easting": self.dockwidget.easting_lines,
+                    "northing": self.dockwidget.northing_lines,
+                    "altitude": self.dockwidget.altitude_lines,
+                    "strat": self.dockwidget.strat_lines,
                     "strat_age": self.dockwidget.strat_age_lines,
-                    "set_name" : self.dockwidget.set_name_lines,
-                    "comment"  : self.dockwidget.comment_lines
+                    "set_name": self.dockwidget.set_name_lines,
+                    "comment": self.dockwidget.comment_lines
                 }
             }
 
@@ -289,12 +297,23 @@ class GeologicalDataProcessing:
             self.dockwidget.select_data_file_button.clicked.connect(self.on_select_data_file)
             # 2 - Import tab
             # 2.1 - Import points
-            self.dockwidget.import_columns_points.hide()
-            self.dockwidget.separator.addItems([';', ',', '<tabulator>', '.', '-', '_', '/', '\\'])
-            self.dockwidget.separator.currentIndexChanged[str].connect(self.process_import)
-            self.dockwidget.import_type.currentChanged.connect(self.on_import_item_changed_event)
+            # self.dockwidget.import_columns_points.hide()
+            # self.dockwidget.separator.addItems([';', ',', '<tabulator>', '.', '-', '_', '/', '\\'])
+            # self.dockwidget.separator.currentIndexChanged[str].connect(self.process_import)
+            # self.dockwidget.import_type.currentChanged.connect(self.on_import_item_changed_event)
 
-            self.dockwidget.start_tests_button.clicked.connect(self.on_start_tests)
+            # start tests button
+            # -> only visible and active when the debug flag is True
+            if debug:
+                self.dockwidget.start_tests_button.clicked.connect(self.on_start_tests)
+            else:
+                self.dockwidget.start_tests_separator.setVisible(False)
+                self.dockwidget.start_tests_button.setVisible(False)
+
+            self.__models['import_points'] = PointImportModel()
+            self.__views['import_points'] = PointImportView(self.dockwidget)
+            self.__controllers['import_points'] = PointImportController(self.__models['import_points'],
+                                                                        self.__views['import_points'])
 
     #
     # user defined functions
@@ -308,6 +327,22 @@ class GeologicalDataProcessing:
         for key in self.__import_widgets:
             for combo in self.__import_widgets[key]:
                 self.__import_widgets[key][combo].clear()
+
+    @staticmethod
+    def __get_file_name(obj: Tuple or str) -> str:
+        """
+        returns a string from the return of the QFileDialog request
+        -> on MacOS it is stored as a tuple, on Windows as a str
+        :param obj: return object of a QFileDialog request
+        :return: returns a string from the return of the QFileDialog request
+        :raises ValueError: if obj is not an instance of str or tuple or has no elements if it is a tuple
+        """
+        if isinstance(obj, tuple) and len(obj) > 0:
+            return str(obj[0])
+        elif isinstance(obj, str):
+            return obj
+
+        raise ValueError("Cannot return file path. Element is empty or not an instance of tuple or string!")
 
     #
     # public functions
@@ -405,8 +440,9 @@ class GeologicalDataProcessing:
         slot for creating a new database
         :return: Nothing
         """
-        filename = QFileDialog.getSaveFileName(self.dockwidget, "Select database file", "",
-                                               "Databases(*.db *.sqlite *.data);;Any File Type (*)")
+        filename = GeologicalDataProcessing.__get_file_name(
+            QFileDialog.getSaveFileName(self.dockwidget, "Select database file", "",
+                                        "Databases(*.db *.sqlite *.data);;Any File Type (*)"))
 
         if filename != "":
             # noinspection PyTypeChecker
@@ -433,8 +469,9 @@ class GeologicalDataProcessing:
             # noinspection SpellCheckingInspection
             path = u"C:/Programmieren/GeologicalToolbox/GeologicalToolbox/tests/test_data"
 
-        filename = QFileDialog.getOpenFileName(self.dockwidget, "Select data file", path,
-                                               "Data Files(*.txt *.csv *.data);;Any File Type (*)")
+        filename = GeologicalDataProcessing.__get_file_name(
+            QFileDialog.getOpenFileName(self.dockwidget, "Select data file", path,
+                                        "Data Files(*.txt *.csv *.data);;Any File Type (*)"))
 
         # noinspection PyCallByClass, PyArgumentList
         QgsMessageLog.logMessage("Import File: {}".format(filename), level=0)
@@ -480,8 +517,9 @@ class GeologicalDataProcessing:
         slot for selecting a sqlite database file and set the result to the related lineedit
         :return: Nothing
         """
-        filename = QFileDialog.getOpenFileName(self.dockwidget, "Select database file", "",
-                                               "Databases(*.db *.sqlite *.data);;Any File Type (*)")
+        filename = GeologicalDataProcessing.__get_file_name(
+            QFileDialog.getOpenFileName(self.dockwidget, "Select database file", "",
+                                        "Databases(*.db *.sqlite *.data);;Any File Type (*)"))
 
         if filename != "":
             # noinspection PyTypeChecker
