@@ -3,6 +3,8 @@
 This module defines views for import processing
 """
 
+from PyQt5.QtCore import pyqtSignal
+
 from GeologicalDataProcessing.geological_data_processing_dockwidget import GeologicalDataProcessingDockWidget
 
 
@@ -30,3 +32,12 @@ class PointImportView:
             "set_name": self.__dockwidget.set_name_points,
             "comment": self.__dockwidget.comment_points
         }
+
+    # slots
+    def _on_data_change(self, *args) -> None:
+        """
+        slot for all gui-data-changed-signals
+        :param args: possible arguments which could be submited
+        :return: Nothing
+        """
+
