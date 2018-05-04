@@ -17,6 +17,7 @@ class PointImportView(QObject):
     def __init__(self, dockwidget: GeologicalDataProcessingDockWidget) -> None:
         """
         Initialize the view
+
         :param dockwidget: current GeologicalDataProcessingDockWidget instance
         """
 
@@ -33,22 +34,38 @@ class PointImportView(QObject):
             "set_name": self.__dockwidget.set_name_points,
             "comment": self.__dockwidget.comment_points
         }
+
+        for key in self.__names:
+            self.__names[key].currentTextChanged.connect(self._on_combobox_text_change)
+
+        self.__dockwidget.import_file.textChanged.connect(self._on_input_file_change)
         super().__init__()
 
     # signals
-    data_changed = pyqtSignal([int], ["QString"])
-    """data changed signal which gives the index or name of the changed column"""
+    combobox_changed = pyqtSignal(list)
+    """data changed signal which gives the index or name of the changed column and the newly selected text"""
+    input_file_changed = pyqtSignal(str)
+    """signal send, when the import file name changes"""
 
     # slots
-    def _on_data_change(self, *args) -> None:
+    def _on_combobox_text_change(self, _) -> None:
         """
-        slot for all gui-data-changed-signals
-        :param args: possible arguments which could be submitted
+        Emits the combobox_changed signal with a list of changed text
         :return: Nothing
         """
-        pass
+        selection_list = [self.__names[key].currentText() for key in self.__names]
+        self.combobox_changed.emit(selection_list)
 
-    def data(self, index: int or str) -> str:
+    def _on_input_file_change(self, file: str) -> None:
+        """
+        slot for textChanged(str) signal of the filename lineedit
+        :param file: newly selected filename
+        :return: Nothing
+        """
+        self.input_file_changed.emit(file)
+
+    # public functions
+    def combobox_data(self, index: int or str) -> str:
         """
         Returns the currently selected item of the gui element with the given index
         :param index: index of the requested gui element as integer or string
@@ -66,9 +83,28 @@ class PointImportView(QObject):
 
         return self.__names[index].currentText()
 
-    def set_data(self, index: int or str, values: List[str], default_index: int = 0) -> None:
+    def get_name(self, index: int) -> str or None:
         """
-        Sets the committed values list to the gui combobox element for the given index
+        Returns the name of the combobox with the given index
+        :param index: index of the requested combobox
+        :return: Returns the name of the combobox with the given index
+        :raises IndexError: if the requested index is not in the list
+        :raises ValueError: if the index is not convertible to an integer
+        """
+        index = int(index)
+        if 0 <= index < len(self.__names.keys()):
+            return list(self.__names.keys())[0]
+
+    def get_names(self):
+        """
+        Returns a list of the combobox names
+        :return: Returns a list of the combobox names
+        """
+        return list(self.__names.keys())
+
+    def set_combobox_data(self, index: int or str, values: List[str], default_index: int = 0) -> None:
+        """
+        Sets the committed values list to the gui combobox elements for the given index
         :param index: index of the requested gui element as integer or string
         :param values: new values for the combo boxes as a list of strings
         :param default_index: default selected index. If no default value is given, or the index is not part of the
