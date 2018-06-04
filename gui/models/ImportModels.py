@@ -126,13 +126,13 @@ class PointImportModel(ImportModelInterface):
 
     # save column names and indices
     _columns = {
-        "easting"          : 0,
-        "northing"         : 0,
-        "altitude"         : -1,
-        "stratigraphy"     : -1,
+        "easting": 0,
+        "northing": 0,
+        "altitude": -1,
+        "stratigraphy": -1,
         "stratigraphic_age": -1,
-        "set_name"         : -1,
-        "comment"          : -1
+        "set_name": -1,
+        "comment": -1
     }
 
     def __init__(self):

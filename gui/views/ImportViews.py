@@ -36,33 +36,33 @@ class PointImportView(QObject):
         }
 
         for key in self.__names:
-            self.__names[key].currentTextChanged.connect(self._on_combobox_text_change)
+            self.__names[key].currentTextChanged.connect(self._on_selection_change)
 
-        self.__dockwidget.import_file.textChanged.connect(self._on_input_file_change)
+        self.__dockwidget.import_file.textChanged.connect(self._on_import_file_change)
         super().__init__()
 
     # signals
-    combobox_changed = pyqtSignal(list)
-    """data changed signal which gives the index or name of the changed column and the newly selected text"""
-    input_file_changed = pyqtSignal(str)
+    import_file_changed = pyqtSignal(str)
     """signal send, when the import file name changes"""
+    selection_changed = pyqtSignal(list)
+    """data changed signal which gives the index or name of the changed column and the newly selected text"""
 
     # slots
-    def _on_combobox_text_change(self, _) -> None:
-        """
-        Emits the combobox_changed signal with a list of changed text
-        :return: Nothing
-        """
-        selection_list = [self.__names[key].currentText() for key in self.__names]
-        self.combobox_changed.emit(selection_list)
-
-    def _on_input_file_change(self, file: str) -> None:
+    def _on_import_file_change(self, file: str) -> None:
         """
         slot for textChanged(str) signal of the filename lineedit
         :param file: newly selected filename
         :return: Nothing
         """
-        self.input_file_changed.emit(file)
+        self.import_file_changed.emit(file)
+
+    def _on_selection_change(self, _) -> None:
+        """
+        Emits the combobox_changed signal with a list of changed text
+        :return: Nothing
+        """
+        selection_list = [self.__names[key].currentText() for key in self.__names]
+        self.selection_changed.emit(selection_list)
 
     # public functions
     def combobox_data(self, index: int or str) -> str:
