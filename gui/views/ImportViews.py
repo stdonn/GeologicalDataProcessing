@@ -3,43 +3,80 @@
 This module defines views for import processing
 """
 
-from typing import List
+from typing import Dict, List
 from PyQt5.QtCore import pyqtSignal, QObject
+from PyQt5.QtWidgets import QComboBox
 
 from GeologicalDataProcessing.geological_data_processing_dockwidget import GeologicalDataProcessingDockWidget
 
 
-class PointImportView(QObject):
+class ImportViewInterface(QObject):
     """
-    viewer class for the point import procedure
+    interface class defining signals and slots for all import views
     """
 
     def __init__(self, dockwidget: GeologicalDataProcessingDockWidget) -> None:
         """
         Initialize the view
-
         :param dockwidget: current GeologicalDataProcessingDockWidget instance
         """
-
+        self.__combos = dict()
         self.__dockwidget = dockwidget
 
-        # summarize import_tests Widgets
-        # noinspection SpellCheckingInspection
-        self.__names = {
-            "easting": self.__dockwidget.easting_points,
-            "northing": self.__dockwidget.northing_points,
-            "altitude": self.__dockwidget.altitude_points,
-            "strat": self.__dockwidget.strat_points,
-            "strat_age": self.__dockwidget.strat_age_points,
-            "set_name": self.__dockwidget.set_name_points,
-            "comment": self.__dockwidget.comment_points
-        }
-
-        for key in self.__names:
-            self.__names[key].currentTextChanged.connect(self._on_selection_change)
-
         self.__dockwidget.import_file.textChanged.connect(self._on_import_file_change)
+
         super().__init__()
+
+    # setter and getter
+    @property
+    def dockwidget(self) -> GeologicalDataProcessingDockWidget:
+        """
+        Returns the currently active plugin-dockwidget
+        :return: returns the currently active plugin-dockwidget
+        """
+        return self.__dockwidget
+
+    @dockwidget.setter
+    def dockwidget(self, dwgt: GeologicalDataProcessingDockWidget) -> None:
+        """
+        Sets a new active dockwidget
+        :param dwgt: new dockwidget
+        :return: Nothing
+        :raises TypeError: if dockwidget is not an instance of GeologicalDataProcessingDockWidget
+        """
+        if not isinstance(dwgt, GeologicalDataProcessingDockWidget):
+            raise TypeError("dockwidget is not an instance of GeologicalDataProcessingDockWidget!")
+
+        self.__dockwidget = dwgt
+
+    @property
+    def combobox_names(self) -> Dict:
+        """
+        Returns a dictionary of comboboxes for the current view
+        :return: returns a dictionary of comboboxes for the current view
+        """
+        return self.__combos
+
+    @combobox_names.setter
+    def combobox_names(self, combo_dict: Dict) -> None:
+        """
+        Sets a new dictionary to the combobox list. Disconnects the old ones and connects the new tp the _on_selection_change slot
+        :param combo_dict: dictionary with new combobox elements
+        :return: Nothing
+        :raises TypeError: if a dictionary value is not an instance of QComboBox or a key is not a str. Sets an empty dictionary instead
+        """
+        [self.__combos[key].disconnect(self._on_selection_change) for key in self.__combos]
+
+        for key in combo_dict:
+            if not isinstance(key, str):
+                self.__combos = dict()
+                raise TypeError("{} is not a string".format(str(key)))
+            if not isinstance(combo_dict[key], QComboBox):
+                self.__combos = dict()
+                raise TypeError("{} is not an instance of QComboBox".format(str(key)))
+
+        self.__combos = combo_dict
+        [self.__combos[key].connect(self._on_selection_change) for key in self.__combos]
 
     # signals
     import_file_changed = pyqtSignal(str)
@@ -61,7 +98,7 @@ class PointImportView(QObject):
         Emits the combobox_changed signal with a list of changed text
         :return: Nothing
         """
-        selection_list = [self.__names[key].currentText() for key in self.__names]
+        selection_list = [self.combobox_names[key].currentText() for key in self.combobox_names]
         self.selection_changed.emit(selection_list)
 
     # public functions
@@ -74,14 +111,14 @@ class PointImportView(QObject):
         """
 
         if isinstance(index, int):
-            index = [self.__names.keys()][index]
+            index = [self.combobox_names.keys()][index]
         else:
             index = str(index)
 
-        if index not in self.__names:
+        if index not in self.combobox_names:
             raise IndexError("{} is not available".format(index))
 
-        return self.__names[index].currentText()
+        return self.combobox_names[index].currentText()
 
     def get_name(self, index: int) -> str or None:
         """
@@ -92,15 +129,16 @@ class PointImportView(QObject):
         :raises ValueError: if the index is not convertible to an integer
         """
         index = int(index)
-        if 0 <= index < len(self.__names.keys()):
-            return list(self.__names.keys())[0]
+
+        if 0 <= index < len(self.combobox_names.keys()):
+            return list(self.combobox_names.keys())[0]
 
     def get_names(self):
         """
         Returns a list of the combobox names
         :return: Returns a list of the combobox names
         """
-        return list(self.__names.keys())
+        return list(self.combobox_names.keys())
 
     def set_combobox_data(self, index: int or str, values: List[str], default_index: int = 0) -> None:
         """
@@ -115,20 +153,46 @@ class PointImportView(QObject):
         """
 
         if isinstance(index, int):
-            index = [self.__names.keys()][index]
+            index = [self.combobox_names.keys()][index]
         else:
             index = str(index)
 
-        if index not in self.__names:
+        if index not in self.combobox_names:
             raise IndexError("{} is not available".format(index))
 
         if isinstance(default_index, int):
             raise TypeError("default_index({}) is not an instance of int!")
 
-        self.__names[index].clear()
+        self.combobox_names[index].clear()
         for item in values:
-            self.__names[index].addItem(str(item))
+            self.combobox_names[index].addItem(str(item))
 
         if not (0 <= default_index <= len(values)):
             default_index = 0
-        self.__names[index].setCurrentIndex(default_index)
+        self.combobox_names[index].setCurrentIndex(default_index)
+
+
+class PointImportView(ImportViewInterface):
+    """
+    viewer class for the point import procedure
+    """
+
+    def __init__(self, dockwidget: GeologicalDataProcessingDockWidget) -> None:
+        """
+        Initialize the view
+        :param dockwidget: current GeologicalDataProcessingDockWidget instance
+        """
+        super().__init__(dockwidget)
+        self.__dockwidget = dockwidget
+
+        # summarize import_tests Widgets
+        # noinspection SpellCheckingInspection
+        combos = {
+            "easting": self.__dockwidget.easting_points,
+            "northing": self.__dockwidget.northing_points,
+            "altitude": self.__dockwidget.altitude_points,
+            "strat": self.__dockwidget.strat_points,
+            "strat_age": self.__dockwidget.strat_age_points,
+            "set_name": self.__dockwidget.set_name_points,
+            "comment": self.__dockwidget.comment_points
+        }
