@@ -117,7 +117,11 @@
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout_3">
         <item>
-         <widget class="QLineEdit" name="database_file"/>
+         <widget class="QLineEdit" name="database_file">
+          <property name="styleSheet">
+           <string notr="true">margin-bottom:10px;</string>
+          </property>
+         </widget>
         </item>
        </layout>
       </item>
@@ -134,6 +138,9 @@
           <width>400</width>
           <height>100</height>
          </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true"/>
         </property>
         <property name="currentIndex">
          <number>0</number>
@@ -153,6 +160,9 @@
           <string>Import Data</string>
          </attribute>
          <layout class="QHBoxLayout" name="horizontalLayout">
+          <property name="spacing">
+           <number>0</number>
+          </property>
           <item>
            <layout class="QVBoxLayout" name="verticalLayout_3">
             <item>
@@ -265,9 +275,9 @@
                <property name="geometry">
                 <rect>
                  <x>0</x>
-                 <y>-3</y>
-                 <width>357</width>
-                 <height>431</height>
+                 <y>0</y>
+                 <width>358</width>
+                 <height>502</height>
                 </rect>
                </property>
                <attribute name="icon">
@@ -597,8 +607,8 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>274</width>
-                 <height>406</height>
+                 <width>280</width>
+                 <height>468</height>
                 </rect>
                </property>
                <attribute name="icon">
