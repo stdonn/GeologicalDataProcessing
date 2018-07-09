@@ -3,6 +3,7 @@
 This module defines views for import processing
 """
 
+import os.path
 from typing import Dict, List
 from PyQt5.QtCore import pyqtSignal, QObject
 from PyQt5.QtWidgets import QComboBox
@@ -21,9 +22,16 @@ class ImportViewInterface(QObject):
         :param dockwidget: current GeologicalDataProcessingDockWidget instance
         """
         self.__combos = dict()
-        self.__dockwidget = dockwidget
+        self.__dwg = dockwidget
 
-        self.__dockwidget.import_file.textChanged.connect(self._on_import_file_change)
+        self.__dwg.import_file.textChanged.connect(self._on_import_file_change)
+        self.__db = ""
+        self.__separator = ";"
+        self.__working_dir = ""
+
+        self.db = self.__dwg.database_file.text()
+        self.separator = self.__dwg
+        self.working_directory = self.__dwg.working_dir.text()
 
         super().__init__()
 
@@ -34,20 +42,7 @@ class ImportViewInterface(QObject):
         Returns the currently active plugin-dockwidget
         :return: returns the currently active plugin-dockwidget
         """
-        return self.__dockwidget
-
-    @dockwidget.setter
-    def dockwidget(self, dwgt: GeologicalDataProcessingDockWidget) -> None:
-        """
-        Sets a new active dockwidget
-        :param dwgt: new dockwidget
-        :return: Nothing
-        :raises TypeError: if dockwidget is not an instance of GeologicalDataProcessingDockWidget
-        """
-        if not isinstance(dwgt, GeologicalDataProcessingDockWidget):
-            raise TypeError("dockwidget is not an instance of GeologicalDataProcessingDockWidget!")
-
-        self.__dockwidget = dwgt
+        return self.__dwg
 
     @property
     def combobox_names(self) -> Dict:
@@ -78,6 +73,53 @@ class ImportViewInterface(QObject):
         self.__combos = combo_dict
         [self.__combos[key].connect(self._on_selection_change) for key in self.__combos]
 
+    @property
+    def database(self):
+        """
+        Returns the currently selected database
+        :return: returns the currently selected database
+        """
+        return self.__db
+
+    @database.setter
+    def database(self, db: str) -> None:
+        """
+        database setter
+        :param db: new path to the database (or an empty path for in-memory usage)
+        :return: Nothing
+        :raises ValueError: if the file doesn't exists
+        """
+        db = os.path.normpath(str(db))
+        if (os.path.exists(db) and not os.path.isfile(db)) or db == "":
+            self.__db = db
+        else:
+            raise ValueError("Database does not exists: {}".format(db))
+
+    @property
+    def working_directory(self) -> str:
+        """
+        Returns the currently selected working directory
+        :return: returns the currently selected working directory
+        """
+        return self.__working_dir
+
+    @working_directory.setter
+    def working_directory(self, work_dir: str) -> None:
+        """
+        working directory setter
+        :param work_dir: new working directory (or an empty path for in-memory usage)
+        :return: Nothing
+        :raises ValueError: if the path doesn't exist or isn't a directory
+        """
+        work_dir = os.path.normpath(str(work_dir))
+        if (os.path.exists(work_dir) and os.path.isdir(work_dir)) or work_dir == "":
+            self.__working_dir = work_dir
+        else:
+            raise ValueError("Committed value is not a directory: {}".format(work_dir))
+
+    # TODO: add coordinate system
+    #       add separator
+    
     # signals
     import_file_changed = pyqtSignal(str)
     """signal send, when the import file name changes"""
@@ -177,22 +219,21 @@ class PointImportView(ImportViewInterface):
     viewer class for the point import procedure
     """
 
-    def __init__(self, dockwidget: GeologicalDataProcessingDockWidget) -> None:
+    def __init__(self, dwg: GeologicalDataProcessingDockWidget) -> None:
         """
         Initialize the view
-        :param dockwidget: current GeologicalDataProcessingDockWidget instance
+        :param dwg: current GeologicalDataProcessingDockWidget instance
         """
-        super().__init__(dockwidget)
-        self.__dockwidget = dockwidget
+        super().__init__(dwg)
 
         # summarize import_tests Widgets
         # noinspection SpellCheckingInspection
-        combos = {
-            "easting": self.__dockwidget.easting_points,
-            "northing": self.__dockwidget.northing_points,
-            "altitude": self.__dockwidget.altitude_points,
-            "strat": self.__dockwidget.strat_points,
-            "strat_age": self.__dockwidget.strat_age_points,
-            "set_name": self.__dockwidget.set_name_points,
-            "comment": self.__dockwidget.comment_points
+        self.combobox_names = {
+            "easting": self.dockwidget.easting_points,
+            "northing": self.dockwidget.northing_points,
+            "altitude": self.dockwidget.altitude_points,
+            "strat": self.dockwidget.strat_points,
+            "strat_age": self.dockwidget.strat_age_points,
+            "set_name": self.dockwidget.set_name_points,
+            "comment": self.dockwidget.comment_points
         }
