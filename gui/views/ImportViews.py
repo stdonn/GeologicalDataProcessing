@@ -119,7 +119,7 @@ class ImportViewInterface(QObject):
 
     # TODO: add coordinate system
     #       add separator
-    
+
     # signals
     import_file_changed = pyqtSignal(str)
     """signal send, when the import file name changes"""
