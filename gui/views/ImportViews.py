@@ -33,6 +33,9 @@ class ImportViewInterface(QObject):
         self.separator = self.__dwg
         self.working_directory = self.__dwg.working_dir.text()
 
+        # initialize user interface
+        self.__dwg.separator.addItems([';', ',', '<tabulator>', '.', '-', '_', '/', '\\'])
+
         super().__init__()
 
     # setter and getter
@@ -116,6 +119,38 @@ class ImportViewInterface(QObject):
             self.__working_dir = work_dir
         else:
             raise ValueError("Committed value is not a directory: {}".format(work_dir))
+
+    @property
+    def separator(self):
+        """
+        get / set the separator of the input file
+        possible values are: ';', ',', '\t', '.', '-', '_', '/', '\\'
+        :return: returns the currently selected separator
+        """
+        sep = self.__dwg.separator.currentText()
+        if sep == "<tabulator>":
+            sep = '\t'
+        return sep
+
+    @separator.setter
+    def separator(self, sep):
+        """
+        get / set the separator of the input file
+        possible values are: ';', ',', '\t', '.', '-', '_', '/', '\\'
+        :return: nothing
+        :param sep: new separator
+        :return: Nothing
+        :raises ValueError: if sep is not in list of possible values.
+        """
+        if sep not in [';', ',', '\t', '.', '-', '_', '/', '\\']:
+            raise ValueError("{} as separator is not allowed!")
+
+        if sep == '\t':
+            sep = "<tabulator>"
+
+        self.__dwg.setCurrentText(sep)
+
+
 
     # TODO: add coordinate system
     #       add separator
