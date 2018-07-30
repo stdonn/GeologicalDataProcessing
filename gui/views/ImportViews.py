@@ -7,6 +7,7 @@ import os.path
 from typing import Dict, List
 from PyQt5.QtCore import pyqtSignal, QObject
 from PyQt5.QtWidgets import QComboBox
+from qgis.core import QgsCoordinateReferenceSystem
 
 from GeologicalDataProcessing.geological_data_processing_dockwidget import GeologicalDataProcessingDockWidget
 
@@ -150,18 +151,48 @@ class ImportViewInterface(QObject):
 
         self.__dwg.setCurrentText(sep)
 
+    @property
+    def crs(self) -> QgsCoordinateReferenceSystem:
+        """
+        gets / sets the Reference System in QGIS format
+        :return: current coordinate reference system
+        :raises TypeError: if crs is an instance of QgsCoordinateReferenceSystem
+        :raises ValueError: if the committed reference system is not valid
+        """
+        return self.__dwg.mQgsProjectionSelectionWidget.crs()
 
+    @crs.setter
+    def crs(self, _crs:QgsCoordinateReferenceSystem) -> None:
+        """
+        gets / sets the Reference System in QGIS format
+        :return: current coordinate reference system
+        :raises TypeError: if crs is an instance of QgsCoordinateReferenceSystem
+        """
+        if not isinstance(_crs, QgsCoordinateReferenceSystem):
+            raise TypeError("committed value is not of type QgsCoordinateReferenceSystem!")
 
-    # TODO: add coordinate system
-    #       add separator
+        if not _crs.isValid():
+            raise ValueError("committed reference system is not valid")
+
+        self.__dwg.mQgsProjectionSelectionWidget.setCrs(_crs)
 
     # signals
+    crs_changed = pyqtSignal(QgsCoordinateReferenceSystem)
+    """signal send, when the selected coordinate reference system changes"""
     import_file_changed = pyqtSignal(str)
     """signal send, when the import file name changes"""
     selection_changed = pyqtSignal(list)
     """data changed signal which gives the index or name of the changed column and the newly selected text"""
 
+
     # slots
+    def _on_crs_changes(self) -> None:
+        """
+        slot called, when the selected coordinate reference system has changed
+        :return: Nothing
+        """
+        self.crs_changed.emit(self.__dwg.mQgsProjectionSelectionWidget.crs())
+
     def _on_import_file_change(self, file: str) -> None:
         """
         slot for textChanged(str) signal of the filename lineedit
