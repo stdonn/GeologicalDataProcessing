@@ -27,15 +27,14 @@ class ImportViewInterface(QObject):
 
         self.__dwg.import_file.textChanged.connect(self._on_import_file_change)
         self.__db = ""
-        self.__separator = ";"
         self.__working_dir = ""
 
         self.db = self.__dwg.database_file.text()
-        self.separator = self.__dwg
+        self.separator = self.__dwg.separator.currentText()
         self.working_directory = self.__dwg.working_dir.text()
 
         # initialize user interface
-        self.__dwg.separator.addItems([';', ',', '<tabulator>', '.', '-', '_', '/', '\\'])
+        #self.__dwg.separator.addItems([';', ',', '<tabulator>', '.', '-', '_', '/', '\\'])
 
         super().__init__()
 
@@ -64,7 +63,7 @@ class ImportViewInterface(QObject):
         :return: Nothing
         :raises TypeError: if a dictionary value is not an instance of QComboBox or a key is not a str. Sets an empty dictionary instead
         """
-        [self.__combos[key].disconnect(self._on_selection_change) for key in self.__combos]
+        [self.__combos[key].currentTextChanged.disconnect(self._on_selection_change) for key in self.__combos]
 
         for key in combo_dict:
             if not isinstance(key, str):
@@ -75,7 +74,7 @@ class ImportViewInterface(QObject):
                 raise TypeError("{} is not an instance of QComboBox".format(str(key)))
 
         self.__combos = combo_dict
-        [self.__combos[key].connect(self._on_selection_change) for key in self.__combos]
+        [self.__combos[key].currentTextChanged.connect(self._on_selection_change) for key in self.__combos]
 
     @property
     def database(self):
@@ -149,7 +148,7 @@ class ImportViewInterface(QObject):
         if sep == '\t':
             sep = "<tabulator>"
 
-        self.__dwg.setCurrentText(sep)
+        self.__dwg.separator.setCurrentText(sep)
 
     @property
     def crs(self) -> QgsCoordinateReferenceSystem:
