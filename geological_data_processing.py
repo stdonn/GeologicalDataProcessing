@@ -297,8 +297,8 @@ class GeologicalDataProcessing:
             self.dockwidget.select_data_file_button.clicked.connect(self.on_select_data_file)
             # 2 - Import tab
             # 2.1 - Import points
-            # self.dockwidget.import_columns_points.hide()
-            # self.dockwidget.separator.addItems([';', ',', '<tabulator>', '.', '-', '_', '/', '\\'])
+            self.dockwidget.import_columns_points.hide()
+            self.dockwidget.separator.addItems([';', ',', '<tabulator>', '.', '-', '_', '/', '\\'])
             # self.dockwidget.separator.currentIndexChanged[str].connect(self.process_import)
             # self.dockwidget.import_type.currentChanged.connect(self.on_import_item_changed_event)
 
