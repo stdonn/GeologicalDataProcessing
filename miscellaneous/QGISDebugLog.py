@@ -47,10 +47,15 @@ class QGISDebugLog:
             level_text = "WARNING"
         elif level == 2:
             level_text = "CRITICAL"
+        elif level == 3:
+            level_text = "DEBUG"
 
         with open(self.__logfile, "a") as logfile:
             time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            logfile.write("{}\t[{}] {} - {}\n".format(time, level_text, title, text))
+            if text != "":
+                logfile.write("{}  [{}]  {}: {}\n".format(time, level_text, title, text))
+            else:
+                logfile.write("{}  [{}]  {}\n".format(time, level_text, title))
 
     def __push_to_qgis(self, title: str, text: str, level: int = 0) -> None:
         """
@@ -70,7 +75,7 @@ class QGISDebugLog:
         else:
             self.__iface.messageBar().pushInfo(title, text)
 
-    def push_message(self, title: str, text: str, level: int = 0):
+    def push_message(self, title: str, text: str = "", level: int = 0):
         """
         :param title: message title
         :param text: message to write to the QGIS messagebar / messagelog

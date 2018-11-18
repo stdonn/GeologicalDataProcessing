@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>420</width>
-    <height>900</height>
+    <width>475</width>
+    <height>1027</height>
    </rect>
   </property>
   <property name="windowIcon">
@@ -251,12 +251,12 @@
                  </size>
                 </property>
                 <property name="text">
-                 <string>Coordinate Reference System:</string>
+                 <string>CRS:</string>
                 </property>
                </widget>
               </item>
               <item>
-               <widget class="QgsProjectionSelectionWidget" name="mQgsProjectionSelectionWidget"/>
+               <widget class="QgsProjectionSelectionWidget" name="mQgsProjectionSelectionWidget" native="true"/>
               </item>
              </layout>
             </item>
@@ -269,15 +269,15 @@
                </sizepolicy>
               </property>
               <property name="currentIndex">
-               <number>0</number>
+               <number>1</number>
               </property>
               <widget class="QWidget" name="point_tab">
                <property name="geometry">
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>358</width>
-                 <height>502</height>
+                 <width>413</width>
+                 <height>422</height>
                 </rect>
                </property>
                <attribute name="icon">
@@ -288,16 +288,6 @@
                 <string>Points</string>
                </attribute>
                <layout class="QVBoxLayout" name="verticalLayout_4">
-                <item>
-                 <widget class="QLabel" name="label_9">
-                  <property name="text">
-                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span
-                                                                                style=&quot; font-weight:600;&quot;&gt;define
-                                                                                column content&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;
-                                                                            </string>
-                  </property>
-                 </widget>
-                </item>
                 <item>
                  <layout class="QHBoxLayout" name="horizontalLayout_5">
                   <item>
@@ -585,18 +575,46 @@
                  </spacer>
                 </item>
                 <item>
-                 <widget class="QListView" name="import_columns_points">
+                 <widget class="QLabel" name="label_9">
+                  <property name="text">
+                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Additional Import Columns&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QListWidget" name="import_columns_points">
                   <property name="enabled">
-                   <bool>false</bool>
+                   <bool>true</bool>
                   </property>
                   <property name="sizePolicy">
-                   <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+                   <sizepolicy hsizetype="Expanding" vsizetype="MinimumExpanding">
                     <horstretch>0</horstretch>
                     <verstretch>0</verstretch>
                    </sizepolicy>
                   </property>
-                  <property name="flow">
-                   <enum>QListView::LeftToRight</enum>
+                  <property name="minimumSize">
+                   <size>
+                    <width>0</width>
+                    <height>20</height>
+                   </size>
+                  </property>
+                  <property name="styleSheet">
+                   <string notr="true">background-color: rgb(232, 232, 232)</string>
+                  </property>
+                  <property name="selectionMode">
+                   <enum>QAbstractItemView::MultiSelection</enum>
+                  </property>
+                  <property name="isWrapping" stdset="0">
+                   <bool>false</bool>
+                  </property>
+                  <property name="resizeMode">
+                   <enum>QListView::Adjust</enum>
+                  </property>
+                  <property name="viewMode">
+                   <enum>QListView::ListMode</enum>
+                  </property>
+                  <property name="sortingEnabled">
+                   <bool>true</bool>
                   </property>
                  </widget>
                 </item>
@@ -607,8 +625,8 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>280</width>
-                 <height>468</height>
+                 <width>413</width>
+                 <height>422</height>
                 </rect>
                </property>
                <attribute name="icon">
@@ -893,18 +911,16 @@
                  </layout>
                 </item>
                 <item>
-                 <widget class="QListView" name="import_columns_lines">
-                  <property name="enabled">
-                   <bool>false</bool>
+                 <widget class="QLabel" name="label_10">
+                  <property name="text">
+                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Additional Import Columns&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                   </property>
-                  <property name="sizePolicy">
-                   <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
-                    <horstretch>0</horstretch>
-                    <verstretch>0</verstretch>
-                   </sizepolicy>
-                  </property>
-                  <property name="flow">
-                   <enum>QListView::LeftToRight</enum>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QListWidget" name="import_columns_lines">
+                  <property name="styleSheet">
+                   <string notr="true">background-color: rgb(232, 232, 232)</string>
                   </property>
                  </widget>
                 </item>
@@ -915,8 +931,8 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>98</width>
-                 <height>28</height>
+                 <width>413</width>
+                 <height>422</height>
                 </rect>
                </property>
                <attribute name="icon">
@@ -932,8 +948,8 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>98</width>
-                 <height>28</height>
+                 <width>413</width>
+                 <height>422</height>
                 </rect>
                </property>
                <attribute name="icon">
@@ -949,8 +965,8 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>98</width>
-                 <height>28</height>
+                 <width>413</width>
+                 <height>422</height>
                 </rect>
                </property>
                <attribute name="icon">

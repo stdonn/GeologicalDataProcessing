@@ -3,122 +3,184 @@
 Defines controller for the data import_tests
 """
 
-from GeologicalDataProcessing.geological_data_processing_dockwidget import GeologicalDataProcessingDockWidget
-from GeologicalDataProcessing.gui.models.ImportModels import ImportModelInterface, PointImportModel
+from PyQt5.QtWidgets import QListWidget
+from typing import List
+
+from GeologicalDataProcessing.config import debug
+from GeologicalDataProcessing.gui.models.ImportModels import ImportModelInterface, PointImportModel, LineImportModel
+from GeologicalDataProcessing.gui.views.ImportViews import ImportViewInterface, PointImportView, LineImportView
 from GeologicalDataProcessing.miscellaneous.ExceptionHandling import ExceptionHandling
+from GeologicalDataProcessing.miscellaneous.QGISDebugLog import QGISDebugLog
+from GeologicalDataProcessing.services.ImportService import ImportService
 
 # miscellaneous
-from GeologicalDataProcessing.config import debug
+from GeologicalDataProcessing.miscellaneous.Helper import diff
 
 
 class ImportControllersInterface:
     """
     Basic interface for all import_tests controller
     """
+    logger = QGISDebugLog()
 
-    def __init__(self, model: ImportModelInterface = None, view: GeologicalDataProcessingDockWidget = None) -> None:
+    def __init__(self, view: ImportViewInterface = None) -> None:
+        """
+        :param view: ImportViewInterface
         """
 
-        :param model: PointImportModel
-        :param view:
+        if debug:
+            self.logger.push_message(self.__class__.__name__, "__init__", level=3)
+
+        self._view: ImportViewInterface = view
+
+        self._import_service = ImportService.get_instance()
+        self._import_service.import_columns_changed.connect(self._on_import_columns_changed)
+
+        self._view.selection_changed.connect(self._on_selection_changed)
+
+        self._list_widget: QListWidget = None
+        self._selectable_columns = []
+        self._number_columns = []
+        self._working_dir = []
+
+    def _on_import_columns_changed(self) -> None:
         """
-        self._model = model
-        self._view = view
+        change the import columns
+        :return: Nothing
+        """
 
-    def on_import_file_changed(self, filename:str) -> None:
+        if debug:
+            self.logger.push_message(self.__class__.__name__, "_on_import_columns_changed", level=3)
+
+        self._selectable_columns = self._import_service.selectable_columns
+
+    def _on_import_file_changed(self, filename: str) -> None:
+        """
+        Test slot if the import file changed
+        :param filename: importfile
+        :return: Nothing
+        """
+
+        if debug:
+            self.logger.push_message(self.__class__.__name__, "_on_import_file_changed(" + filename + ")", level=3)
+
+    def _on_model_changed(self) -> None:
         pass
 
-    def on_model_changed(self) -> None:
+    def _on_start_import(self) -> None:
         pass
 
-    def on_start_import(self) -> None:
-        pass
+    def _on_selection_changed(self, selected_cols: List[str]) -> None:
+        """
+        process the selection change event and update the additional import columns
+        :param selected_cols: selected columns to exclude
+        :return: Nothing
+        """
+
+        if debug:
+            self.logger.push_message(self.__class__.__name__, "_on_selection_changed", level=3)
+
+        if self._list_widget is None:
+            self.logger.push_message(self.__class__.__name__, "No list widget specified for additional columns",
+                                     level=1)
+            return
+
+        cols = diff(self._selectable_columns, selected_cols)
+
+        if debug:
+            self.logger.push_message(self.__class__.__name__, "selectable_columns: " + str(self._selectable_columns),
+                                     level=3)
+            self.logger.push_message(self.__class__.__name__, "selected_cols: " + str(selected_cols), level=3)
+            self.logger.push_message(self.__class__.__name__, "additional cols: " + str(cols), level=3)
+
+        self._list_widget.show()
+        self._list_widget.setEnabled(True)
+        self._list_widget.clear()
+        self._list_widget.addItems(cols)
 
 
 class PointImportController(ImportControllersInterface):
-    def __init__(self, model:PointImportModel, view:GeologicalDataProcessingDockWidget) -> None:
-        super().__init__(model, view)
-        pass
+    """
+    controller for the point data import
+    """
 
-    def on_import_file_changed(self, filename:str) -> None:
+    def __init__(self, view: PointImportView) -> None:
         """
-                process the selected import_tests file and set possible values for column combo boxes
-                :param separator: selected separator
-                :return: Nothing
-                """
+        Initialize the PointImportController Object
+        :param view: PointImportView
+        """
+
+        if debug:
+            self.logger.push_message(self.__class__.__name__, "__init__", level=3)
+
+        super().__init__(view)
+        self._list_widget = self._import_service.dockwidget.import_columns_points
+
+    def _on_import_columns_changed(self) -> None:
+        """
+        change the import columns
+        :return: Nothing
+        """
+        if debug:
+            self.logger.push_message(self.__class__.__name__, "_on_import_columns_changed", level=3)
+
+        super()._on_import_columns_changed()
         try:
-            if debug:
-                # noinspection PyCallByClass, PyArgumentList
-                QgsMessageLog.logMessage("Selected separator: {}".format(separator), level=0)
-            if separator == "<tabulator>":
-                separator = '\t'
+            self._view.set_combobox_data("easting", self._import_service.number_columns, 0)
+            # noinspection SpellCheckingInspection
+            self._view.set_combobox_data("northing", self._import_service.number_columns, 1)
+            self._view.set_combobox_data("altitude", [''] + self._import_service.number_columns, 3)
+            # noinspection SpellCheckingInspection
+            self._view.set_combobox_data("strat", [''] + self._import_service.selectable_columns, 0)
+            # noinspection SpellCheckingInspection
+            self._view.set_combobox_data("strat_age", [''] + self._import_service.number_columns, 0)
+            self._view.set_combobox_data("set_name", [''] + self._import_service.selectable_columns, 0)
+            self._view.set_combobox_data("comment", [''] + self._import_service.selectable_columns, 0)
 
-            self.__clear_import_combos()
-
-            import_file_name = self.dockwidget.import_file.text()
-            try:
-                import_file = open(import_file_name, 'r')
-            except IOError:
-                # noinspection PyCallByClass, PyArgumentList
-                QgsMessageLog.logMessage("Cannot open file: {}".format(import_file_name), level=0)
-                return
-
-            cols = import_file.readline().strip().split(separator)
-            props = import_file.readline().strip().split(separator)
-            data = import_file.readline().strip().split(separator)
-
-            if debug:
-                # noinspection PyCallByClass, PyArgumentList
-                QgsMessageLog.logMessage("cols:\t{}".format(cols), level=0)
-                # noinspection PyCallByClass, PyArgumentList
-                QgsMessageLog.logMessage("props:\t{}".format(props), level=0)
-                # noinspection PyCallByClass, PyArgumentList
-                QgsMessageLog.logMessage("data:\t{}".format(data), level=0)
-
-            import_file.close()
-
-            nr_cols = []
-            for col in data:
-                try:
-                    float(col)
-                    nr_cols.append(data.index(col))
-                except ValueError:
-                    pass
-
-            if len(nr_cols) < 3:
-                QMessageBox.critical(self.dockwidget, "Not enough columns",
-                                     "Cannot find enough columns. " +
-                                     "Maybe use a different separator or another import_tests file")
-                self.__clear_import_combos()
-                return
-
-            numbers = [cols[x] for x in nr_cols]
-
-            current_item_index = self.dockwidget.import_type.currentIndex()
-            current_item_name = self.dockwidget.import_type.itemText(current_item_index)
-
-            if debug:
-                # noinspection PyCallByClass, PyArgumentList
-                QgsMessageLog.logMessage("current Item: {}[{}]".format(current_item_name, current_item_index), level=0)
-
-            if current_item_name in ["Points", "Lines"]:
-                self.__import_widgets[current_item_name]["easting"].addItems(numbers)
-                self.__import_widgets[current_item_name]["easting"].setCurrentIndex(0)
-                self.__import_widgets[current_item_name]["northing"].addItems(numbers)
-                self.__import_widgets[current_item_name]["northing"].setCurrentIndex(1)
-                self.__import_widgets[current_item_name]["altitude"].addItems([''] + numbers)
-                self.__import_widgets[current_item_name]["altitude"].setCurrentIndex(0)
-                # noinspection SpellCheckingInspection
-                self.__import_widgets[current_item_name]["strat"].addItems([''] + cols)
-                # noinspection SpellCheckingInspection
-                self.__import_widgets[current_item_name]["strat_age"].addItems([''] + numbers)
-                self.__import_widgets[current_item_name]["set_name"].addItems([''] + cols)
-                self.__import_widgets[current_item_name]["comment"].addItems([''] + cols)
         except Exception as e:
-            ExceptionHandling(e).push_last_to_qgis(self._view)
-            
-    def on_model_changed(self) -> None:
-        pass
+            self.logger.push_message("Error", str(ExceptionHandling(e)), level=2)
+            self._import_service.reset()
 
-    def on_start_import(self) -> None:
-        pass
+
+class LineImportController(ImportControllersInterface):
+    """
+    controller for the line data import
+    """
+
+    def __init__(self, view: LineImportView) -> None:
+        """
+        Initialize the LineImportController
+        :param view: LineImportView
+        """
+
+        if debug:
+            self.logger.push_message(self.__class__.__name__, "__init__", level=3)
+
+        super().__init__(view)
+        self._list_widget = self._import_service.dockwidget.import_columns_lines
+
+    def _on_import_columns_changed(self) -> None:
+        """
+        process the selected import_tests file and set possible values for column combo boxes
+        :return: Nothing
+        """
+
+        if debug:
+            self.logger.push_message(self.__class__.__name__, "_on_import_columns_changed", level=3)
+
+        super()._on_import_columns_changed()
+        try:
+            self._view.set_combobox_data("easting", self._import_service.number_columns, 0)
+            # noinspection SpellCheckingInspection
+            self._view.set_combobox_data("northing", self._import_service.number_columns, 1)
+            self._view.set_combobox_data("altitude", [''] + self._import_service.number_columns, 3)
+            # noinspection SpellCheckingInspection
+            self._view.set_combobox_data("strat", [''] + self._import_service.selectable_columns, 0)
+            # noinspection SpellCheckingInspection
+            self._view.set_combobox_data("strat_age", [''] + self._import_service.number_columns, 0)
+            self._view.set_combobox_data("set_name", [''] + self._import_service.selectable_columns, 0)
+            self._view.set_combobox_data("comment", [''] + self._import_service.selectable_columns, 0)
+
+        except Exception as e:
+            self.logger.push_message("Error", str(ExceptionHandling(e)), level=2)
+            self._view.reset_import()

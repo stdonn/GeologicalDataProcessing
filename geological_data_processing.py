@@ -21,33 +21,26 @@
  ***************************************************************************/
 """
 
-import platform
-# noinspection PyUnresolvedReferences
 import os.path
-import sys
-import traceback
 import unittest
 from io import StringIO
-from typing import Tuple
 
-# noinspection PyUnresolvedReferences
 from PyQt5.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QAction, QFileDialog, QMessageBox
-# noinspection PyUnresolvedReferences
-from qgis.core import QgsMessageLog
+from PyQt5.QtWidgets import QAction, QFileDialog
 
 # Import the code for the DockWidget
 from GeologicalDataProcessing.geological_data_processing_dockwidget import GeologicalDataProcessingDockWidget
 from GeologicalDataProcessing.miscellaneous.QGISDebugLog import QGISDebugLog
+from GeologicalDataProcessing.services.ImportService import ImportService
 # Initialize Qt resources from file resources.py
 # noinspection PyUnresolvedReferences
 from GeologicalDataProcessing.resources import *
 
 # import MVC-Classes
-from GeologicalDataProcessing.gui.controller.ImportController import PointImportController
-from GeologicalDataProcessing.gui.models.ImportModels import PointImportModel
-from GeologicalDataProcessing.gui.views.ImportViews import PointImportView
+from GeologicalDataProcessing.gui.controller.ImportController import PointImportController, LineImportController
+from GeologicalDataProcessing.gui.models.ImportModels import PointImportModel, LineImportModel
+from GeologicalDataProcessing.gui.views.ImportViews import PointImportView, LineImportView
 
 # import tests
 from GeologicalDataProcessing.tests.miscellaneouse.test_ExceptionHandling import TestExceptionHandlingClass
@@ -55,6 +48,8 @@ from GeologicalDataProcessing.tests.import_tests.test_point_import import TestPo
 
 # miscellaneous
 from GeologicalDataProcessing.config import debug
+from GeologicalDataProcessing.miscellaneous.ExceptionHandling import ExceptionHandling
+from GeologicalDataProcessing.miscellaneous.Helper import get_file_name
 
 
 class GeologicalDataProcessing:
@@ -99,12 +94,14 @@ class GeologicalDataProcessing:
         self.dockwidget = None
 
         # user defined class variables
-        self.__import_widgets = dict()
+        self.__current_selected_tab = "Points"
 
         # save model, view and controller instances
         self.__controllers = dict()
         self.__models = dict()
         self.__views = dict()
+
+        self.__import_service = None
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -267,170 +264,45 @@ class GeologicalDataProcessing:
             # manual added content
             #
 
-            # summarize import_tests Widgets
-            # noinspection SpellCheckingInspection
-            self.__import_widgets = {
-                "Points": {
-                    "easting": self.dockwidget.easting_points,
-                    "northing": self.dockwidget.northing_points,
-                    "altitude": self.dockwidget.altitude_points,
-                    "strat": self.dockwidget.strat_points,
-                    "strat_age": self.dockwidget.strat_age_points,
-                    "set_name": self.dockwidget.set_name_points,
-                    "comment": self.dockwidget.comment_points
-                },
-                "Lines": {
-                    "easting": self.dockwidget.easting_lines,
-                    "northing": self.dockwidget.northing_lines,
-                    "altitude": self.dockwidget.altitude_lines,
-                    "strat": self.dockwidget.strat_lines,
-                    "strat_age": self.dockwidget.strat_age_lines,
-                    "set_name": self.dockwidget.set_name_lines,
-                    "comment": self.dockwidget.comment_lines
-                }
-            }
+            try:
+                # initialize logger
+                logger = QGISDebugLog()
+                # logger.qgis_iface = self.iface
+                logger.save_to_file = True
 
-            # initialize the gui and connect signals and slots
-            # 1 - General
-            self.dockwidget.create_DB_button.clicked.connect(self.on_create_db_clicked)
-            self.dockwidget.select_DB_button.clicked.connect(self.on_select_db)
-            self.dockwidget.select_data_file_button.clicked.connect(self.on_select_data_file)
-            # 2 - Import tab
-            # 2.1 - Import points
-            self.dockwidget.import_columns_points.hide()
-            self.dockwidget.separator.addItems([';', ',', '<tabulator>', '.', '-', '_', '/', '\\'])
-            # self.dockwidget.separator.currentIndexChanged[str].connect(self.process_import)
-            # self.dockwidget.import_type.currentChanged.connect(self.on_import_item_changed_event)
+                self.__import_service = ImportService.get_instance()
 
-            # start tests button
-            # -> only visible and active when the debug flag is True
-            if debug:
-                self.dockwidget.start_tests_button.clicked.connect(self.on_start_tests)
-            else:
-                self.dockwidget.start_tests_separator.setVisible(False)
-                self.dockwidget.start_tests_button.setVisible(False)
+                # initialize the gui and connect signals and slots
+                # 1 - General
+                self.dockwidget.create_DB_button.clicked.connect(self.on_create_db_clicked)
+                self.dockwidget.select_DB_button.clicked.connect(self.on_select_db)
 
-            self.__models['import_points'] = PointImportModel()
-            self.__views['import_points'] = PointImportView(self.dockwidget)
-            self.__controllers['import_points'] = PointImportController(self.__models['import_points'],
-                                                                        self.__views['import_points'])
+                # 2 - Import tab
+                # 2.1 - Import points
+                self.dockwidget.import_type.currentChanged.connect(self.on_import_type_changed_event)
+
+                # start tests button
+                # -> only visible and active when the debug flag is True
+                if debug:
+                    self.dockwidget.start_tests_button.clicked.connect(self.on_start_tests)
+                else:
+                    self.dockwidget.start_tests_separator.setVisible(False)
+                    self.dockwidget.start_tests_button.setVisible(False)
+
+                self.__import_service.dockwidget = self.dockwidget
+                self.__import_service.iface = self.iface
+
+                self.__views['import_points'] = PointImportView(self.dockwidget)
+                self.__views['import_lines'] = LineImportView(self.dockwidget)
+                self.__controllers['import_points'] = PointImportController(self.__views['import_points'])
+                self.__controllers['import_lines'] = LineImportController(self.__views['import_lines'])
+            except Exception as e:
+                ExceptionHandling(e).log()
 
     #
     # user defined functions
     # private functions
     #
-    def __clear_import_combos(self) -> None:
-        """
-        Clear all import_tests combo boxes
-        :return: Nothing
-        """
-        for key in self.__import_widgets:
-            for combo in self.__import_widgets[key]:
-                self.__import_widgets[key][combo].clear()
-
-    @staticmethod
-    def __get_file_name(obj: Tuple or str) -> str:
-        """
-        returns a string from the return of the QFileDialog request
-        -> on MacOS it is stored as a tuple, on Windows as a str
-        :param obj: return object of a QFileDialog request
-        :return: returns a string from the return of the QFileDialog request
-        :raises ValueError: if obj is not an instance of str or tuple or has no elements if it is a tuple
-        """
-        if isinstance(obj, tuple) and len(obj) > 0:
-            return str(obj[0])
-        elif isinstance(obj, str):
-            return obj
-
-        raise ValueError("Cannot return file path. Element is empty or not an instance of tuple or string!")
-
-    #
-    # public functions
-    #
-    def process_import(self, separator: str) -> None:
-        """
-        process the selected import_tests file and set possible values for column combo boxes
-        :param separator: selected separator
-        :return: Nothing
-        """
-        try:
-            if debug:
-                # noinspection PyCallByClass, PyArgumentList
-                QgsMessageLog.logMessage("Selected separator: {}".format(separator), level=0)
-            if separator == "<tabulator>":
-                separator = '\t'
-
-            self.__clear_import_combos()
-
-            import_file_name = self.dockwidget.import_file.text()
-            try:
-                import_file = open(import_file_name, 'r')
-            except IOError:
-                # noinspection PyCallByClass, PyArgumentList
-                QgsMessageLog.logMessage("Cannot open file: {}".format(import_file_name), level=0)
-                return
-
-            cols = import_file.readline().strip().split(separator)
-            props = import_file.readline().strip().split(separator)
-            data = import_file.readline().strip().split(separator)
-
-            if debug:
-                # noinspection PyCallByClass, PyArgumentList
-                QgsMessageLog.logMessage("cols:\t{}".format(cols), level=0)
-                # noinspection PyCallByClass, PyArgumentList
-                QgsMessageLog.logMessage("props:\t{}".format(props), level=0)
-                # noinspection PyCallByClass, PyArgumentList
-                QgsMessageLog.logMessage("data:\t{}".format(data), level=0)
-
-            import_file.close()
-
-            nr_cols = []
-            for col in data:
-                try:
-                    float(col)
-                    nr_cols.append(data.index(col))
-                except ValueError:
-                    pass
-
-            if len(nr_cols) < 3:
-                QMessageBox.critical(self.dockwidget, "Not enough columns",
-                                     "Cannot find enough columns. " +
-                                     "Maybe use a different separator or another import_tests file")
-                self.__clear_import_combos()
-                return
-
-            numbers = [cols[x] for x in nr_cols]
-
-            current_item_index = self.dockwidget.import_type.currentIndex()
-            current_item_name = self.dockwidget.import_type.itemText(current_item_index)
-
-            if debug:
-                # noinspection PyCallByClass, PyArgumentList
-                QgsMessageLog.logMessage("current Item: {}[{}]".format(current_item_name, current_item_index), level=0)
-
-            if current_item_name in ["Points", "Lines"]:
-                self.__import_widgets[current_item_name]["easting"].addItems(numbers)
-                self.__import_widgets[current_item_name]["easting"].setCurrentIndex(0)
-                self.__import_widgets[current_item_name]["northing"].addItems(numbers)
-                self.__import_widgets[current_item_name]["northing"].setCurrentIndex(1)
-                self.__import_widgets[current_item_name]["altitude"].addItems([''] + numbers)
-                self.__import_widgets[current_item_name]["altitude"].setCurrentIndex(0)
-                # noinspection SpellCheckingInspection
-                self.__import_widgets[current_item_name]["strat"].addItems([''] + cols)
-                # noinspection SpellCheckingInspection
-                self.__import_widgets[current_item_name]["strat_age"].addItems([''] + numbers)
-                self.__import_widgets[current_item_name]["set_name"].addItems([''] + cols)
-                self.__import_widgets[current_item_name]["comment"].addItems([''] + cols)
-        except Exception as e:
-            _, _, exc_traceback = sys.exc_info()
-            text = "Error Message:\n{}\nTraceback:\n{}".format(str(e), ''.join(traceback.format_tb(exc_traceback)))
-            # text = "Error Message:\nNone\nTraceback:\n{}".format(traceback.print_exc())
-            self.iface.messageBar().pushMessage("Error",
-                                                "An exception occurred during the process. " +
-                                                "For more details, please take a look to the log windows.",
-                                                level=2)
-            # noinspection PyCallByClass, PyArgumentList
-            QgsMessageLog.logMessage(text, level=2)
 
     #
     # slots
@@ -440,9 +312,8 @@ class GeologicalDataProcessing:
         slot for creating a new database
         :return: Nothing
         """
-        filename = GeologicalDataProcessing.__get_file_name(
-            QFileDialog.getSaveFileName(self.dockwidget, "Select database file", "",
-                                        "Databases(*.db *.sqlite *.data);;Any File Type (*)"))
+        filename = get_file_name(QFileDialog.getSaveFileName(self.dockwidget, "Select database file", "",
+                                                             "Databases(*.db *.sqlite *.data);;Any File Type (*)"))
 
         if filename != "":
             # noinspection PyTypeChecker
@@ -450,76 +321,22 @@ class GeologicalDataProcessing:
                 filename += ".data"
             self.dockwidget.database_file.setText(filename)
 
-    def on_import_item_changed_event(self, _: int) -> None:
+    def on_import_type_changed_event(self, index: int) -> None:
         """
         Calls the process_import function, if the active QToolBox Item changes in order to reset the combo boxes
-        :param _: unused index, delivered by the currentChanged signal
+        :param index: index of the newly selected tab, delivered by the currentChanged signal
         :return: nothing
         """
-        self.process_import(self.dockwidget.separator.currentText())
-
-    def on_select_data_file(self) -> None:
-        """
-        slot for selecting an import_tests data file and processing the corresponding fields inside the import_tests data tab.
-        :return: Nothing
-        """
-        path = u"/Users/stephan/Documents/work/Dissertation/PythonModules/GeologicalToolbox/GeologicalToolbox/" + \
-               u"tests/test_data/"
-        if platform.system() == "Windows":
-            # noinspection SpellCheckingInspection
-            path = u"C:/Programmieren/GeologicalToolbox/GeologicalToolbox/tests/test_data"
-
-        filename = GeologicalDataProcessing.__get_file_name(
-            QFileDialog.getOpenFileName(self.dockwidget, "Select data file", path,
-                                        "Data Files(*.txt *.csv *.data);;Any File Type (*)"))
-
-        # noinspection PyCallByClass, PyArgumentList
-        QgsMessageLog.logMessage("Import File: {}".format(filename), level=0)
-
-        if filename != "":
-            self.dockwidget.import_file.setText(filename)
-            self.__clear_import_combos()
-
-            import_file = self.dockwidget.import_file.text()
-            try:
-                import_file = open(import_file, 'r')
-            except IOError:
-                self.__clear_import_combos()
-                return
-
-            cols = import_file.readline().strip()
-            props = import_file.readline().strip()
-            data = import_file.readline().strip()
-            import_file.close()
-
-            if '' in [cols, props, data]:
-                QMessageBox.critical(self.dockwidget, "Import File Error",
-                                     "Cannot process import_tests file, wrong file format!")
-            else:
-                self.dockwidget.import_file.setText(filename)
-
-            for sep in [';', ',', '\t', '.', '-', '_', '/', '\\']:
-                split = cols.split(sep)
-                if len(split) < 3:
-                    continue
-                if sep == '\t':
-                    index = self.dockwidget.separator.findText("<tabulator>", Qt.MatchFixedString)
-                    if index >= 0:
-                        self.dockwidget.separator.setCurrentIndex(index)
-                        break
-                index = self.dockwidget.separator.findText(sep, Qt.MatchFixedString)
-                if index >= 0:
-                    self.dockwidget.separator.setCurrentIndex(index)
-                    break
+        pass
+        # TODO: Hier muss das neu ausgewählte Tab aktualisiert werden!!!
 
     def on_select_db(self) -> None:
         """
         slot for selecting a sqlite database file and set the result to the related lineedit
         :return: Nothing
         """
-        filename = GeologicalDataProcessing.__get_file_name(
-            QFileDialog.getOpenFileName(self.dockwidget, "Select database file", "",
-                                        "Databases(*.db *.sqlite *.data);;Any File Type (*)"))
+        filename = get_file_name(QFileDialog.getOpenFileName(self.dockwidget, "Select database file", "",
+                                                             "Databases(*.db *.sqlite *.data);;Any File Type (*)"))
 
         if filename != "":
             # noinspection PyTypeChecker

@@ -7,18 +7,19 @@ import sys
 import traceback
 
 from PyQt5.QtWidgets import QPushButton
-# noinspection PyUnresolvedReferences
 from qgis.core import QgsMessageLog
-# noinspection PyUnresolvedReferences
 from qgis.gui import QgisInterface
+
+from GeologicalDataProcessing.miscellaneous.QGISDebugLog import QGISDebugLog
 
 
 class ExceptionHandling:
     """
     Singleton class for basic exception handling
     """
-    __instance = None
-    last_exception = None
+    __instance: "ExceptionHandling" = None
+    last_exception: str = ""
+    __logger: QGISDebugLog = QGISDebugLog()
 
     def __new__(cls, e: Exception = None) -> "ExceptionHandling":
         if cls.__instance is None:
@@ -56,3 +57,6 @@ class ExceptionHandling:
 
         # noinspection PyCallByClass, PyArgumentList
         QgsMessageLog.logMessage(self.last_exception, level=2)
+
+    def log(self):
+        self.__logger.push_message("An exception occurred", self.last_exception, level=2)

@@ -17,7 +17,8 @@ class TestPointImportClass(unittest.TestCase):
     """
     This is a unittest class for the miscellaneous.ExceptionHandling.ExceptionHandling class
     """
-    def __init__(self, *args, iface: QgisInterface, dockwidget:  GeologicalDataProcessingDockWidget) -> None:
+
+    def __init__(self, *args, iface: QgisInterface, dockwidget: GeologicalDataProcessingDockWidget) -> None:
         """
         Initialization of the unittest class
         :param iface: Stores the path to the current iface instance
@@ -50,6 +51,7 @@ class TestPointImportClass(unittest.TestCase):
         :return: Nothing
         """
         pass
+
 
 if __name__ == "__main__":
     unittest.main()
