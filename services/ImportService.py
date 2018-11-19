@@ -9,7 +9,6 @@ import os
 from typing import List
 
 from qgis.core import QgsCoordinateReferenceSystem
-from qgis.gui import QgisInterface
 
 from PyQt5.QtCore import pyqtSignal, QObject
 from PyQt5.QtWidgets import QFileDialog
@@ -25,10 +24,7 @@ class ImportService(QObject):
     """
     Singleton class controlling the import procedures
     """
-    __iface = None
     __instance = None
-    __logfile = ""
-    __to_file = False
     __dwg = None
     __selectable_columns: List[str] = []
     __number_columns: List[str] = []
@@ -60,6 +56,8 @@ class ImportService(QObject):
                                 "Use ImportService.get_instance() instead!")
         else:
             ImportService.__instance = self
+            self.separator = ','
+            self.import_file = ''
 
     #
     # signals
@@ -76,7 +74,10 @@ class ImportService(QObject):
     reset_import = pyqtSignal()
     """signal send, when the reset was requested"""
 
+    #
     # setter and getter
+    #
+
     @property
     def dockwidget(self) -> GeologicalDataProcessingDockWidget:
         """
@@ -88,11 +89,17 @@ class ImportService(QObject):
     @dockwidget.setter
     def dockwidget(self, value: GeologicalDataProcessingDockWidget) -> None:
         """
-        Returns the currently active plugin-dockwidget
-        :return: returns the currently active plugin-dockwidget
+        Sets the currently active plugin-dockwidget
+        :return: Nothing
         :raises TypeError: if value is not of type GeologicalDataProcessingDockWidget
         """
         if isinstance(value, GeologicalDataProcessingDockWidget):
+            if self.__dwg is not None:
+                self.dockwidget.import_file.textChanged.disconnect(self._on_import_file_changed)
+                self.dockwidget.select_data_file_button.clicked.disconnect(self.__on_select_data_file)
+                self.dockwidget.working_dir_button.clicked.disconnect(self.__on_select_working_dir)
+                self.dockwidget.separator.currentIndexChanged[str].disconnect(self._on_separator_changed)
+
             self.__dwg = value
 
             self.dockwidget.import_file.textChanged.connect(self._on_import_file_changed)
@@ -107,32 +114,13 @@ class ImportService(QObject):
             raise TypeError("committed parameter is not of type GeologicalDataProcessingDockWidget")
 
     @property
-    def iface(self) -> QgisInterface:
-        """
-        Property to get and set the QgisInterface
-        :return: current QgisInterface
-        :raises TypeError: if value is not an instance of QgisInterface
-        """
-        return self.__iface
-
-    @iface.setter
-    def iface(self, interface: QgisInterface) -> None:
-        """
-        Property to get and set the QgisInterface
-        :return: current QgisInterface
-        :raises TypeError: if value is not an instance of QgisInterface
-        """
-        if isinstance(interface, QgisInterface):
-            self.__iface = interface
-        else:
-            raise TypeError("value is not an instance of QgisInterface: {}".format(iface))
-
-    @property
     def import_file(self):
         """
         Returns the currently selected import file
         :return: returns the currently selected import file
         """
+        self.__validate()
+
         return self.dockwidget.import_file.text()
 
     @import_file.setter
@@ -143,6 +131,8 @@ class ImportService(QObject):
         :return: Nothing
         :raises ValueError: if the file doesn't exists
         """
+        self.__validate()
+
         self.dockwidget.import_file.setText(str(filename))
 
     @property
@@ -151,6 +141,8 @@ class ImportService(QObject):
         Returns the currently selected working directory
         :return: returns the currently selected working directory
         """
+        self.__validate()
+
         return self.dockwidget.working_dir.text()
 
     @working_directory.setter
@@ -161,6 +153,8 @@ class ImportService(QObject):
         :return: Nothing
         :raises ValueError: if the path doesn't exist or isn't a directory
         """
+        self.__validate()
+
         work_dir = os.path.normpath(str(work_dir))
         if (os.path.exists(work_dir) and os.path.isdir(work_dir)) or work_dir == "":
             self.dockwidget.working_dir.setText(work_dir)
@@ -174,6 +168,8 @@ class ImportService(QObject):
         possible values are: ';', ',', '\t', '.', '-', '_', '/', '\\'
         :return: returns the currently selected separator
         """
+        self.__validate()
+
         sep = self.dockwidget.separator.currentText()
         if sep == "<tabulator>":
             sep = '\t'
@@ -189,6 +185,8 @@ class ImportService(QObject):
         :return: Nothing
         :raises ValueError: if sep is not in list of possible values.
         """
+        self.__validate()
+
         if sep not in [';', ',', '\t', '.', '-', '_', '/', '\\']:
             raise ValueError("{} as separator is not allowed!")
 
@@ -205,6 +203,8 @@ class ImportService(QObject):
         :raises TypeError: if crs is an instance of QgsCoordinateReferenceSystem
         :raises ValueError: if the committed reference system is not valid
         """
+        self.__validate()
+
         return self.dockwidget.mQgsProjectionSelectionWidget.crs()
 
     @crs.setter
@@ -214,6 +214,8 @@ class ImportService(QObject):
         :return: current coordinate reference system
         :raises TypeError: if crs is an instance of QgsCoordinateReferenceSystem
         """
+        self.__validate()
+
         if not isinstance(_crs, QgsCoordinateReferenceSystem):
             raise TypeError("committed value is not of type QgsCoordinateReferenceSystem!")
 
@@ -252,9 +254,8 @@ class ImportService(QObject):
         if debug:
             self.logger.push_message(self.__class__.__name__, "__validate", level=3)
 
-        if self.dockwidget is None or self.__iface is None:
-            raise AttributeError()
-        return True
+        if self.dockwidget is None:
+            raise AttributeError("No dockwidget is set to the ImportService")
 
     #
     # public functions
@@ -265,6 +266,7 @@ class ImportService(QObject):
         Reset the import service and related fields
         :return: Nothing
         """
+        self.__validate()
 
         if debug:
             self.logger.push_message(self.__class__.__name__, "reset", level=3)
@@ -283,6 +285,7 @@ class ImportService(QObject):
         slot called, when the selected coordinate reference system has changed
         :return: Nothing
         """
+        self.__validate()
 
         if debug:
             self.logger.push_message(self.__class__.__name__, "_on_crs_changed", level=3)
@@ -295,6 +298,7 @@ class ImportService(QObject):
         :param filename: newly selected filename
         :return: Nothing
         """
+        self.__validate()
 
         if debug:
             self.logger.push_message(self.__class__.__name__, "_on_import_file_changed", level=3)
@@ -359,6 +363,7 @@ class ImportService(QObject):
         :param _: unused, but necessary for signal connection
         :return: Nothing
         """
+        self.__validate()
 
         if debug:
             self.logger.push_message(self.__class__.__name__, "_on_separator_changed", level=3)
@@ -370,6 +375,7 @@ class ImportService(QObject):
         slot for selecting and checking of a working directory
         :return: Nothing
         """
+        self.__validate()
 
         if debug:
             self.logger.push_message(self.__class__.__name__, "_on_select_data_file", level=3)
@@ -417,6 +423,8 @@ class ImportService(QObject):
         data tab.
         :return: Nothing
         """
+        self.__validate()
+        magikl26
 
         if debug:
             self.logger.push_message(self.__class__.__name__, "_on_select_working_dir", level=3)

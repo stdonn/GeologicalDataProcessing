@@ -273,12 +273,6 @@ class GeologicalDataProcessing:
                 self.__import_service = ImportService.get_instance()
 
                 # initialize the gui and connect signals and slots
-                # 1 - General
-                self.dockwidget.create_DB_button.clicked.connect(self.on_create_db_clicked)
-                self.dockwidget.select_DB_button.clicked.connect(self.on_select_db)
-
-                # 2 - Import tab
-                # 2.1 - Import points
                 self.dockwidget.import_type.currentChanged.connect(self.on_import_type_changed_event)
 
                 # start tests button
@@ -307,20 +301,6 @@ class GeologicalDataProcessing:
     #
     # slots
     #
-    def on_create_db_clicked(self) -> None:
-        """
-        slot for creating a new database
-        :return: Nothing
-        """
-        filename = get_file_name(QFileDialog.getSaveFileName(self.dockwidget, "Select database file", "",
-                                                             "Databases(*.db *.sqlite *.data);;Any File Type (*)"))
-
-        if filename != "":
-            # noinspection PyTypeChecker
-            if os.path.splitext(filename)[-1].lower().lstrip('.') not in ["db", "data", "sqlite"]:
-                filename += ".data"
-            self.dockwidget.database_file.setText(filename)
-
     def on_import_type_changed_event(self, index: int) -> None:
         """
         Calls the process_import function, if the active QToolBox Item changes in order to reset the combo boxes
@@ -329,20 +309,6 @@ class GeologicalDataProcessing:
         """
         pass
         # TODO: Hier muss das neu ausgewählte Tab aktualisiert werden!!!
-
-    def on_select_db(self) -> None:
-        """
-        slot for selecting a sqlite database file and set the result to the related lineedit
-        :return: Nothing
-        """
-        filename = get_file_name(QFileDialog.getOpenFileName(self.dockwidget, "Select database file", "",
-                                                             "Databases(*.db *.sqlite *.data);;Any File Type (*)"))
-
-        if filename != "":
-            # noinspection PyTypeChecker
-            if os.path.splitext(filename)[-1].lower().lstrip('.') not in ["db", "data", "sqlite"]:
-                filename += ".data"
-            self.dockwidget.database_file.setText(filename)
 
     def on_start_tests(self) -> None:
         """
