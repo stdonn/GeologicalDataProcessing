@@ -3,10 +3,11 @@
 module with a service providing all database related connections and functions
 """
 
+import os
+
 from PyQt5.QtWidgets import QFileDialog
 
 from GeologicalDataProcessing.geological_data_processing_dockwidget import GeologicalDataProcessingDockWidget
-from GeologicalDataProcessing.config import debug
 from GeologicalDataProcessing.miscellaneous.QGISDebugLog import QGISDebugLog
 from GeologicalDataProcessing.miscellaneous.Helper import get_file_name
 
@@ -27,13 +28,10 @@ class DatabaseService:
         :return: The single instance of this class
         """
         if DatabaseService.__instance is None:
-            if debug:
-                DatabaseService.logger.push_message(DatabaseService.__class__.__name__,
-                                                    "Create new DatabaseService instance", level=3)
+            DatabaseService.logger.debug(DatabaseService.__class__.__name__, "Create new DatabaseService instance")
             DatabaseService()
-        elif debug:
-            DatabaseService.logger.push_message(DatabaseService.__name__,
-                                                "Returning existing DatabaseService instance", level=3)
+        else:
+            DatabaseService.logger.debug(DatabaseService.__name__, "Returning existing DatabaseService instance")
 
         return DatabaseService.__instance
 
@@ -67,8 +65,8 @@ class DatabaseService:
         """
         if isinstance(value, GeologicalDataProcessingDockWidget):
             if self.__dwg is not None:
-                self.dockwidget.create_DB_button.clicked.disconnect(self.on_create_db_clicked)
-                self.dockwidget.select_DB_button.clicked.disconnect(self.on_select_db)
+                self.dockwidget.create_DB_button.clicked.disconnect(self._on_create_db_clicked)
+                self.dockwidget.select_DB_button.clicked.disconnect(self._on_select_db)
 
             self.__dwg = value
 
@@ -125,7 +123,7 @@ class DatabaseService:
         """
         self.__validate()
 
-        self.logger.push_message(self.__class__.__name__, "New database: " + database, level=3)
+        self.logger.debug(self.__class__.__name__, "New database: " + database)
 
     #
     # private functions
@@ -138,8 +136,7 @@ class DatabaseService:
         :raises
         """
 
-        if debug:
-            self.logger.push_message(self.__class__.__name__, "__validate", level=3)
+        self.logger.debug(self.__class__.__name__, "__validate")
 
         if self.dockwidget is None:
             raise AttributeError("No dockwidget is set to the DatabaseService")

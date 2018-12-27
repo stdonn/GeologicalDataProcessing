@@ -6,8 +6,6 @@ Defines controller for the data import_tests
 from PyQt5.QtWidgets import QListWidget
 from typing import List
 
-from GeologicalDataProcessing.config import debug
-from GeologicalDataProcessing.gui.models.ImportModels import ImportModelInterface, PointImportModel, LineImportModel
 from GeologicalDataProcessing.gui.views.ImportViews import ImportViewInterface, PointImportView, LineImportView
 from GeologicalDataProcessing.miscellaneous.ExceptionHandling import ExceptionHandling
 from GeologicalDataProcessing.miscellaneous.QGISDebugLog import QGISDebugLog
@@ -28,8 +26,7 @@ class ImportControllersInterface:
         :param view: ImportViewInterface
         """
 
-        if debug:
-            self.logger.push_message(self.__class__.__name__, "__init__", level=3)
+        self.logger.debug(self.__class__.__name__, "__init__")
 
         self._view: ImportViewInterface = view
 
@@ -49,8 +46,7 @@ class ImportControllersInterface:
         :return: Nothing
         """
 
-        if debug:
-            self.logger.push_message(self.__class__.__name__, "_on_import_columns_changed", level=3)
+        self.logger.debug(self.__class__.__name__, "_on_import_columns_changed")
 
         self._selectable_columns = self._import_service.selectable_columns
 
@@ -61,8 +57,7 @@ class ImportControllersInterface:
         :return: Nothing
         """
 
-        if debug:
-            self.logger.push_message(self.__class__.__name__, "_on_import_file_changed(" + filename + ")", level=3)
+        self.logger.debug(self.__class__.__name__, "_on_import_file_changed(" + filename + ")")
 
     def _on_model_changed(self) -> None:
         pass
@@ -77,21 +72,17 @@ class ImportControllersInterface:
         :return: Nothing
         """
 
-        if debug:
-            self.logger.push_message(self.__class__.__name__, "_on_selection_changed", level=3)
+        self.logger.debug(self.__class__.__name__, "_on_selection_changed")
 
         if self._list_widget is None:
-            self.logger.push_message(self.__class__.__name__, "No list widget specified for additional columns",
-                                     level=1)
+            self.logger.warn(self.__class__.__name__, "No list widget specified for additional columns")
             return
 
         cols = diff(self._selectable_columns, selected_cols)
 
-        if debug:
-            self.logger.push_message(self.__class__.__name__, "selectable_columns: " + str(self._selectable_columns),
-                                     level=3)
-            self.logger.push_message(self.__class__.__name__, "selected_cols: " + str(selected_cols), level=3)
-            self.logger.push_message(self.__class__.__name__, "additional cols: " + str(cols), level=3)
+        self.logger.debug(self.__class__.__name__, "selectable_columns: " + str(self._selectable_columns))
+        self.logger.debug(self.__class__.__name__, "selected_cols: " + str(selected_cols))
+        self.logger.debug(self.__class__.__name__, "additional cols: " + str(cols))
 
         self._list_widget.show()
         self._list_widget.setEnabled(True)
@@ -110,8 +101,7 @@ class PointImportController(ImportControllersInterface):
         :param view: PointImportView
         """
 
-        if debug:
-            self.logger.push_message(self.__class__.__name__, "__init__", level=3)
+        self.logger.debug(self.__class__.__name__, "__init__")
 
         super().__init__(view)
         self._list_widget = self._import_service.dockwidget.import_columns_points
@@ -121,8 +111,7 @@ class PointImportController(ImportControllersInterface):
         change the import columns
         :return: Nothing
         """
-        if debug:
-            self.logger.push_message(self.__class__.__name__, "_on_import_columns_changed", level=3)
+        self.logger.debug(self.__class__.__name__, "_on_import_columns_changed")
 
         super()._on_import_columns_changed()
         try:
@@ -138,7 +127,7 @@ class PointImportController(ImportControllersInterface):
             self._view.set_combobox_data("comment", [''] + self._import_service.selectable_columns, 0)
 
         except Exception as e:
-            self.logger.push_message("Error", str(ExceptionHandling(e)), level=2)
+            self.logger.error("Error", str(ExceptionHandling(e)))
             self._import_service.reset()
 
 
@@ -153,8 +142,7 @@ class LineImportController(ImportControllersInterface):
         :param view: LineImportView
         """
 
-        if debug:
-            self.logger.push_message(self.__class__.__name__, "__init__", level=3)
+        self.logger.debug(self.__class__.__name__, "__init__")
 
         super().__init__(view)
         self._list_widget = self._import_service.dockwidget.import_columns_lines
@@ -165,8 +153,7 @@ class LineImportController(ImportControllersInterface):
         :return: Nothing
         """
 
-        if debug:
-            self.logger.push_message(self.__class__.__name__, "_on_import_columns_changed", level=3)
+        self.logger.debug(self.__class__.__name__, "_on_import_columns_changed")
 
         super()._on_import_columns_changed()
         try:
@@ -182,5 +169,5 @@ class LineImportController(ImportControllersInterface):
             self._view.set_combobox_data("comment", [''] + self._import_service.selectable_columns, 0)
 
         except Exception as e:
-            self.logger.push_message("Error", str(ExceptionHandling(e)), level=2)
+            self.logger.error("Error", str(ExceptionHandling(e)))
             self._view.reset_import()

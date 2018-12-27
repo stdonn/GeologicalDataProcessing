@@ -59,4 +59,4 @@ class ExceptionHandling:
         QgsMessageLog.logMessage(self.last_exception, level=2)
 
     def log(self):
-        self.__logger.push_message("An exception occurred", self.last_exception, level=2)
+        self.__logger.error("An exception occurred", self.last_exception)

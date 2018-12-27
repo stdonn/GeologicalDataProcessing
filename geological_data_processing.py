@@ -27,20 +27,14 @@ from io import StringIO
 
 from PyQt5.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QAction, QFileDialog
+from PyQt5.QtWidgets import QAction
 
 # Import the code for the DockWidget
 from GeologicalDataProcessing.geological_data_processing_dockwidget import GeologicalDataProcessingDockWidget
-from GeologicalDataProcessing.miscellaneous.QGISDebugLog import QGISDebugLog
-from GeologicalDataProcessing.services.ImportService import ImportService
+from GeologicalDataProcessing.miscellaneous.QGISDebugLog import QGISDebugLog, LogLevel
 # Initialize Qt resources from file resources.py
 # noinspection PyUnresolvedReferences
 from GeologicalDataProcessing.resources import *
-
-# import MVC-Classes
-from GeologicalDataProcessing.gui.controller.ImportController import PointImportController, LineImportController
-from GeologicalDataProcessing.gui.models.ImportModels import PointImportModel, LineImportModel
-from GeologicalDataProcessing.gui.views.ImportViews import PointImportView, LineImportView
 
 # import tests
 from GeologicalDataProcessing.tests.miscellaneouse.test_ExceptionHandling import TestExceptionHandlingClass
@@ -49,7 +43,9 @@ from GeologicalDataProcessing.tests.import_tests.test_point_import import TestPo
 # miscellaneous
 from GeologicalDataProcessing.config import debug
 from GeologicalDataProcessing.miscellaneous.ExceptionHandling import ExceptionHandling
-from GeologicalDataProcessing.miscellaneous.Helper import get_file_name
+
+# import module tests
+from GeologicalDataProcessing.services.ModuleService import ModuleService
 
 
 class GeologicalDataProcessing:
@@ -270,7 +266,16 @@ class GeologicalDataProcessing:
                 # logger.qgis_iface = self.iface
                 logger.save_to_file = True
 
-                self.__import_service = ImportService.get_instance()
+                if not ModuleService.check_required_modules():
+                    return
+
+                from GeologicalDataProcessing.services.DatabaseService import DatabaseService
+                from GeologicalDataProcessing.services.ImportService import ImportService
+                from GeologicalDataProcessing.gui.controller.ImportController import PointImportController
+                from GeologicalDataProcessing.gui.controller.ImportController import LineImportController
+                from GeologicalDataProcessing.gui.views.ImportViews import PointImportView, LineImportView
+
+                self.__import_service = ImportService.get_instance(self.dockwidget)
 
                 # initialize the gui and connect signals and slots
                 self.dockwidget.import_type.currentChanged.connect(self.on_import_type_changed_event)
@@ -282,9 +287,6 @@ class GeologicalDataProcessing:
                 else:
                     self.dockwidget.start_tests_separator.setVisible(False)
                     self.dockwidget.start_tests_button.setVisible(False)
-
-                self.__import_service.dockwidget = self.dockwidget
-                self.__import_service.iface = self.iface
 
                 self.__views['import_points'] = PointImportView(self.dockwidget)
                 self.__views['import_lines'] = LineImportView(self.dockwidget)
@@ -333,9 +335,9 @@ class GeologicalDataProcessing:
         # result = runner.run(unittest.makeSuite(TestExceptionHandlingClass))
         result = runner.run(suite)
 
-        level = 0
+        level = LogLevel.INFO
         if len(result.errors) > 0 or len(result.failures) > 0:
-            level = 2
+            level = LogLevel.CRITICAL
 
         debug_log.push_message("logfile", debug_log.logfile)
         debug_log.push_message("Test runs", str(result.testsRun))

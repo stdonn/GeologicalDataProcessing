@@ -7,9 +7,19 @@ import os
 import platform
 import tempfile
 from datetime import datetime
+from enum import Enum
 
 # noinspection PyUnresolvedReferences
 from qgis.gui import QgisInterface
+
+from GeologicalDataProcessing.config import debug
+
+
+class LogLevel(Enum):
+    INFO = 0,
+    WARNING = 1,
+    CRITICAL = 2,
+    DEBUG = 3
 
 
 class QGISDebugLog:
@@ -31,7 +41,7 @@ class QGISDebugLog:
 
         return cls.__instance
 
-    def __push_to_logfile(self, title: str, text: str, level: int = 0) -> None:
+    def __push_to_logfile(self, title: str, text: str = None, level: LogLevel = LogLevel.INFO) -> None:
         """
         Writes the string text to self.__logfile
         :param title: message title
@@ -42,22 +52,15 @@ class QGISDebugLog:
         if self.__logfile == "":
             assert "log file not known..."
 
-        level_text = "INFO"
-        if level == 1:
-            level_text = "WARNING"
-        elif level == 2:
-            level_text = "CRITICAL"
-        elif level == 3:
-            level_text = "DEBUG"
+        if (level != LogLevel.DEBUG) or debug:
+            with open(self.__logfile, "a") as logfile:
+                time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                if text is not None:
+                    logfile.write("{}  [{}]  {}: {}\n".format(time, level.name, title, text))
+                else:
+                    logfile.write("{}  [{}]  {}\n".format(time, level.name, title))
 
-        with open(self.__logfile, "a") as logfile:
-            time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            if text != "":
-                logfile.write("{}  [{}]  {}: {}\n".format(time, level_text, title, text))
-            else:
-                logfile.write("{}  [{}]  {}\n".format(time, level_text, title))
-
-    def __push_to_qgis(self, title: str, text: str, level: int = 0) -> None:
+    def __push_to_qgis(self, title: str, text: str, level: LogLevel = LogLevel.INFO) -> None:
         """
         Writes the text to QGIS message bar
         :param title: message title
@@ -68,14 +71,21 @@ class QGISDebugLog:
         """
         if self.__iface is None:
             raise ValueError("self.iface instance is None, cannot push messages to QGIS!")
-        if level == 1:
+
+        if text is None:
+            text = ""
+
+        if level == LogLevel.INFO:
+            self.__iface.messageBar().pushInfo(title, text)
+        elif level == LogLevel.WARNING:
             self.__iface.messageBar().pushWarning(title, text)
-        elif level == 2:
+        elif level == LogLevel.CRITICAL:
             self.__iface.messageBar().pushCritical(title, text)
         else:
-            self.__iface.messageBar().pushInfo(title, text)
+            # level == LogLevel.DEBUG => do nothing
+            pass
 
-    def push_message(self, title: str, text: str = "", level: int = 0):
+    def push_message(self, title: str, text: str = None, level: LogLevel = LogLevel.INFO):
         """
         :param title: message title
         :param text: message to write to the QGIS messagebar / messagelog
@@ -86,6 +96,42 @@ class QGISDebugLog:
             self.__push_to_logfile(title, text, level)
         if self.__iface is not None:
             self.__push_to_qgis(title, text, level)
+
+    def debug(self, title: str, text: str = None) -> None:
+        """
+        Log a debug message
+        :param title: title to be logged
+        :param text: text to be logged
+        :return: Nothing
+        """
+        self.push_message(title=title, text=text, level=LogLevel.DEBUG)
+
+    def error(self, title: str, text: str = None) -> None:
+        """
+        Log an error message
+        :param title: title to be logged
+        :param text: text to be logged
+        :return: Nothing
+        """
+        self.push_message(title=title, text=text, level=LogLevel.CRITICAL)
+
+    def info(self, title: str, text: str = None) -> None:
+        """
+        Log an info message
+        :param title: title to be logged
+        :param text: text to be logged
+        :return: Nothing
+        """
+        self.push_message(title=title, text=text, level=LogLevel.INFO)
+
+    def warn(self, title: str, text: str = None) -> None:
+        """
+        Log a warning message
+        :param title: title to be logged
+        :param text: text to be logged
+        :return: Nothing
+        """
+        self.push_message(title=title, text=text, level=LogLevel.WARNING)
 
     # setter and getter
     @property

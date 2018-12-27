@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import QFileDialog
 from GeologicalDataProcessing.config import debug
 from GeologicalDataProcessing.geological_data_processing import GeologicalDataProcessingDockWidget
 from GeologicalDataProcessing.miscellaneous.ExceptionHandling import ExceptionHandling
-from GeologicalDataProcessing.miscellaneous.QGISDebugLog import QGISDebugLog
+from GeologicalDataProcessing.miscellaneous.QGISDebugLog import QGISDebugLog, LogLevel
 from GeologicalDataProcessing.miscellaneous.Helper import get_file_name
 
 
@@ -32,29 +32,30 @@ class ImportService(QObject):
     logger = QGISDebugLog()
 
     @staticmethod
-    def get_instance() -> "ImportService":
+    def get_instance(dwg: GeologicalDataProcessingDockWidget = None) -> "ImportService":
         """
         Creates a new object instance if no object exists or updates the existing one.
         :return: The single instance of this class
         """
+
         if ImportService.__instance is None:
             if debug:
-                ImportService.logger.push_message(ImportService.__class__.__name__, "Create new ImportService instance",
-                                                  level=3)
-            ImportService()
+                ImportService.logger.debug(ImportService.__class__.__name__, "Create new ImportService instance")
+            ImportService(dwg)
         elif debug:
-            ImportService.logger.push_message(ImportService.__name__, "Returning existing ImportService instance",
-                                              level=3)
+            ImportService.logger.debug(ImportService.__name__, "Returning existing ImportService instance")
 
         return ImportService.__instance
 
-    def __init__(self):
-        """ Virtually private constructor. """
+    def __init__(self, dwg: GeologicalDataProcessingDockWidget = None):
+        """ Virtual private constructor. """
         super().__init__()
         if ImportService.__instance is not None:
             raise BaseException("The ImportService-class is a singleton and can't be called directly. " +
                                 "Use ImportService.get_instance() instead!")
         else:
+            if dwg is not None:
+                self.dockwidget = dwg
             ImportService.__instance = self
             self.separator = ','
             self.import_file = ''
@@ -251,8 +252,7 @@ class ImportService(QObject):
         :raises
         """
 
-        if debug:
-            self.logger.push_message(self.__class__.__name__, "__validate", level=3)
+        self.logger.debug(self.__class__.__name__, "__validate")
 
         if self.dockwidget is None:
             raise AttributeError("No dockwidget is set to the ImportService")
@@ -268,8 +268,7 @@ class ImportService(QObject):
         """
         self.__validate()
 
-        if debug:
-            self.logger.push_message(self.__class__.__name__, "reset", level=3)
+        self.logger.debug(self.__class__.__name__, "reset")
 
         self.__selectable_columns = []
         self.__number_columns = []
@@ -287,8 +286,7 @@ class ImportService(QObject):
         """
         self.__validate()
 
-        if debug:
-            self.logger.push_message(self.__class__.__name__, "_on_crs_changed", level=3)
+        self.logger.debug(self.__class__.__name__, "_on_crs_changed")
 
         self.crs_changed.emit(self.dockwidget.mQgsProjectionSelectionWidget.crs())
 
@@ -300,35 +298,32 @@ class ImportService(QObject):
         """
         self.__validate()
 
-        if debug:
-            self.logger.push_message(self.__class__.__name__, "_on_import_file_changed", level=3)
+        self.logger.debug(self.__class__.__name__, "_on_import_file_changed")
 
         if not os.path.isfile(os.path.normpath(filename)):
             self.reset()
-            self.logger.push_message("Not a file", filename, level=1)
+            self.logger.warn("Not a file", filename)
             return
 
         try:
             separator = self.separator
-            if debug:
-                self.logger.push_message("Selected file", "{}".format(filename), level=3)
+            self.logger.debug("Selected file", "{}".format(filename))
             if separator == "<tabulator>":
                 separator = '\t'
 
             try:
                 import_file = open(os.path.normpath(filename), 'r')
             except IOError:
-                self.logger.push_message("Cannot open file", "{}".format(filename), level=2)
+                self.logger.error("Cannot open file", "{}".format(filename))
                 return
 
             cols = import_file.readline().strip().split(separator)
             props = import_file.readline().strip().split(separator)
             data = import_file.readline().strip().split(separator)
 
-            if debug:
-                self.logger.push_message("cols:\t{}".format(cols), level=3)
-                self.logger.push_message("props:\t{}".format(props), level=3)
-                self.logger.push_message("data:\t{}".format(data), level=3)
+            self.logger.debug("cols:\t{}".format(cols))
+            self.logger.debug("props:\t{}".format(props))
+            self.logger.debug("data:\t{}".format(data))
 
             import_file.close()
 
@@ -341,10 +336,9 @@ class ImportService(QObject):
                     pass
 
             if len(nr_cols) < 3:
-                self.logger.push_message("Not enough columns",
-                                         "Cannot find enough columns. " +
-                                         "Maybe use a different separator or another import_tests file",
-                                         level=2)
+                self.logger.error("Not enough columns",
+                                  "Cannot find enough columns. " +
+                                  "Maybe use a different separator or another import_tests file")
                 self.reset()
                 return
 
@@ -354,7 +348,7 @@ class ImportService(QObject):
             self.import_columns_changed.emit()
 
         except Exception as e:
-            self.logger.push_message("Error", str(ExceptionHandling(e)), level=2)
+            self.logger.error("Error", str(ExceptionHandling(e)))
             self.reset()
 
     def _on_separator_changed(self, _: str = "") -> None:
@@ -365,8 +359,7 @@ class ImportService(QObject):
         """
         self.__validate()
 
-        if debug:
-            self.logger.push_message(self.__class__.__name__, "_on_separator_changed", level=3)
+        self.logger.debug(self.__class__.__name__, "_on_separator_changed")
 
         self._on_import_file_changed(self.import_file)
 
@@ -377,8 +370,7 @@ class ImportService(QObject):
         """
         self.__validate()
 
-        if debug:
-            self.logger.push_message(self.__class__.__name__, "_on_select_data_file", level=3)
+        self.logger.debug(self.__class__.__name__, "_on_select_data_file")
 
         path = ""
         if debug:
@@ -394,7 +386,7 @@ class ImportService(QObject):
             try:
                 import_file = open(filename, 'r')
             except IOError as e:
-                self.logger.push_message("Cannot open file", e, level=2)
+                self.logger.error("Cannot open file", e)
                 return
 
             cols = import_file.readline().strip()
@@ -403,9 +395,8 @@ class ImportService(QObject):
             import_file.close()
 
             if '' in [cols, props, data]:
-                self.logger.push_message("Import File Error",
-                                         "Cannot process import_tests file, wrong file format!",
-                                         level=2)
+                self.logger.error("Import File Error",
+                                  "Cannot process import_tests file, wrong file format!")
                 return
 
             for sep in [';', ',', '\t', '.', '-', '_', '/', '\\']:
@@ -424,10 +415,8 @@ class ImportService(QObject):
         :return: Nothing
         """
         self.__validate()
-        magikl26
 
-        if debug:
-            self.logger.push_message(self.__class__.__name__, "_on_select_working_dir", level=3)
+        self.logger.debug(self.__class__.__name__, "_on_select_working_dir")
 
         path = ""
         if debug:
@@ -444,4 +433,4 @@ class ImportService(QObject):
             self.working_directory = dirname
         else:
             self.working_directory = ""
-            self.logger.push_message("Cannot set working directory: ", dirname, level=2)
+            self.logger.error("Cannot set working directory: ", dirname)

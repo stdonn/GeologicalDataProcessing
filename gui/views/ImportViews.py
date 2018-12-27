@@ -7,7 +7,6 @@ from typing import Dict, List
 from PyQt5.QtCore import pyqtSignal, QObject
 from PyQt5.QtWidgets import QComboBox
 
-from GeologicalDataProcessing.config import debug
 from GeologicalDataProcessing.geological_data_processing_dockwidget import GeologicalDataProcessingDockWidget
 from GeologicalDataProcessing.miscellaneous.QGISDebugLog import QGISDebugLog
 from GeologicalDataProcessing.services.ImportService import ImportService
@@ -25,8 +24,7 @@ class ImportViewInterface(QObject):
         :param dockwidget: current GeologicalDataProcessingDockWidget instance
         """
 
-        if debug:
-            self.logger.push_message(self.__class__.__name__, "__init__", level=3)
+        self.logger.debug(self.__class__.__name__, "__init__")
 
         self.__combos = dict()
         self.__dwg = dockwidget
@@ -186,8 +184,7 @@ class PointImportView(ImportViewInterface):
         :param dwg: current GeologicalDataProcessingDockWidget instance
         """
 
-        if debug:
-            self.logger.push_message(self.__class__.__name__, "__init__", level=3)
+        self.logger.debug(self.__class__.__name__, "__init__")
 
         super().__init__(dwg)
 
@@ -215,8 +212,7 @@ class LineImportView(ImportViewInterface):
         :param dwg: current GeologicalDataProcessingDockWidget instance
         """
 
-        if debug:
-            self.logger.push_message(self.__class__.__name__, "__init__", level=3)
+        self.logger.debug(self.__class__.__name__, "__init__")
 
         super().__init__(dwg)
 
@@ -231,4 +227,3 @@ class LineImportView(ImportViewInterface):
             "set_name": self._import_service.dockwidget.set_name_lines,
             "comment": self._import_service.dockwidget.comment_lines
         }
-
