@@ -73,28 +73,37 @@ class QGISDebugLog:
             raise ValueError("self.iface instance is None, cannot push messages to QGIS!")
 
         if text is None:
-            text = ""
-
-        if level == LogLevel.INFO:
-            self.__iface.messageBar().pushInfo(title, text)
-        elif level == LogLevel.WARNING:
-            self.__iface.messageBar().pushWarning(title, text)
-        elif level == LogLevel.CRITICAL:
-            self.__iface.messageBar().pushCritical(title, text)
+            if level == LogLevel.INFO:
+                self.__iface.messageBar().pushInfo('', title)
+            elif level == LogLevel.WARNING:
+                self.__iface.messageBar().pushWarning('', title)
+            elif level == LogLevel.CRITICAL:
+                self.__iface.messageBar().pushCritical('', title)
+            else:
+                # level == LogLevel.DEBUG => do nothing
+                pass
         else:
-            # level == LogLevel.DEBUG => do nothing
-            pass
+            if level == LogLevel.INFO:
+                self.__iface.messageBar().pushInfo(title, text)
+            elif level == LogLevel.WARNING:
+                self.__iface.messageBar().pushWarning(title, text)
+            elif level == LogLevel.CRITICAL:
+                self.__iface.messageBar().pushCritical(title, text)
+            else:
+                # level == LogLevel.DEBUG => do nothing
+                pass
 
-    def push_message(self, title: str, text: str = None, level: LogLevel = LogLevel.INFO):
+    def push_message(self, title: str, text: str = None, level: LogLevel = LogLevel.INFO, only_logfile: bool = False):
         """
         :param title: message title
         :param text: message to write to the QGIS messagebar / messagelog
         :param level: QGIS message level (standard: 0 -> QgsMessageLog.INFO)
+        :param only_logfile: Don't write output to QGIS interface, even if it is set
         :return: Nothing
         """
         if self.__to_file:
             self.__push_to_logfile(title, text, level)
-        if self.__iface is not None:
+        if (self.__iface is not None) and not only_logfile:
             self.__push_to_qgis(title, text, level)
 
     def debug(self, title: str, text: str = None) -> None:
@@ -106,32 +115,35 @@ class QGISDebugLog:
         """
         self.push_message(title=title, text=text, level=LogLevel.DEBUG)
 
-    def error(self, title: str, text: str = None) -> None:
+    def error(self, title: str, text: str = None, only_logfile: bool = False) -> None:
         """
         Log an error message
         :param title: title to be logged
         :param text: text to be logged
+        :param only_logfile: Don't write output to QGIS interface, even if it is set
         :return: Nothing
         """
-        self.push_message(title=title, text=text, level=LogLevel.CRITICAL)
+        self.push_message(title=title, text=text, level=LogLevel.CRITICAL, only_logfile=only_logfile)
 
-    def info(self, title: str, text: str = None) -> None:
+    def info(self, title: str, text: str = None, only_logfile: bool = False) -> None:
         """
         Log an info message
         :param title: title to be logged
         :param text: text to be logged
+        :param only_logfile: Don't write output to QGIS interface, even if it is set
         :return: Nothing
         """
-        self.push_message(title=title, text=text, level=LogLevel.INFO)
+        self.push_message(title=title, text=text, level=LogLevel.INFO, only_logfile=only_logfile)
 
-    def warn(self, title: str, text: str = None) -> None:
+    def warn(self, title: str, text: str = None, only_logfile: bool = False) -> None:
         """
         Log a warning message
         :param title: title to be logged
         :param text: text to be logged
+        :param only_logfile: Don't write output to QGIS interface, even if it is set
         :return: Nothing
         """
-        self.push_message(title=title, text=text, level=LogLevel.WARNING)
+        self.push_message(title=title, text=text, level=LogLevel.WARNING, only_logfile=only_logfile)
 
     # setter and getter
     @property

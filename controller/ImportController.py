@@ -6,7 +6,7 @@ Defines controller for the data import_tests
 from PyQt5.QtWidgets import QListWidget
 from typing import List
 
-from GeologicalDataProcessing.gui.views.ImportViews import ImportViewInterface, PointImportView, LineImportView
+from GeologicalDataProcessing.views.ImportViews import ImportViewInterface, PointImportView, LineImportView
 from GeologicalDataProcessing.miscellaneous.ExceptionHandling import ExceptionHandling
 from GeologicalDataProcessing.miscellaneous.QGISDebugLog import QGISDebugLog
 from GeologicalDataProcessing.services.ImportService import ImportService

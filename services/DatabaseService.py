@@ -3,13 +3,10 @@
 module with a service providing all database related connections and functions
 """
 
-import os
+from GeologicalToolbox.DBHandler import DBHandler
 
-from PyQt5.QtWidgets import QFileDialog
-
-from GeologicalDataProcessing.geological_data_processing_dockwidget import GeologicalDataProcessingDockWidget
+from GeologicalDataProcessing.miscellaneous.ExceptionHandling import ExceptionHandling
 from GeologicalDataProcessing.miscellaneous.QGISDebugLog import QGISDebugLog
-from GeologicalDataProcessing.miscellaneous.Helper import get_file_name
 
 
 class DatabaseService:
@@ -19,7 +16,6 @@ class DatabaseService:
     __instance = None
 
     logger = QGISDebugLog()
-    __dwg = None
 
     @staticmethod
     def get_instance() -> "DatabaseService":
@@ -44,99 +40,119 @@ class DatabaseService:
         else:
             DatabaseService.__instance = self
 
+        self.__connection = ""
+        self.__db_type = ""
+        self.__password = ""
+        self.__username = ""
+
+        self.__handler = None
+        self.__session = None
+
     #
     # setter and getter
     #
 
     @property
-    def dockwidget(self) -> GeologicalDataProcessingDockWidget:
+    def connection(self) -> str:
         """
-        Returns the currently active plugin-dockwidget
-        :return: returns the currently active plugin-dockwidget
+        Getter for the current connection string
+        :return: returns the current connection string
         """
-        return self.__dwg
+        return self.__connection
 
-    @dockwidget.setter
-    def dockwidget(self, value: GeologicalDataProcessingDockWidget) -> None:
+    @connection.setter
+    def connection(self, value: str) -> None:
         """
-        Sets the currently active plugin-dockwidget
-        :return: returns the currently active plugin-dockwidget
-        :raises TypeError: if value is not of type GeologicalDataProcessingDockWidget
-        """
-        if isinstance(value, GeologicalDataProcessingDockWidget):
-            if self.__dwg is not None:
-                self.dockwidget.create_DB_button.clicked.disconnect(self._on_create_db_clicked)
-                self.dockwidget.select_DB_button.clicked.disconnect(self._on_select_db)
-
-            self.__dwg = value
-
-            self.dockwidget.database_file.setText('')
-            self.dockwidget.create_DB_button.clicked.connect(self._on_create_db_clicked)
-            self.dockwidget.select_DB_button.clicked.connect(self._on_select_db)
-
-        else:
-            raise TypeError("committed parameter is not of type GeologicalDataProcessingDockWidget")
-
-    #
-    # slots
-    #
-
-    def _on_create_db_clicked(self) -> None:
-        """
-        slot for creating a new database
+        setter for the current connection string
         :return: Nothing
         """
+        self.__connection = str(value)
 
-        self.__validate()
-
-        filename = get_file_name(QFileDialog.getSaveFileName(self.dockwidget, "Select database file", "",
-                                                             "Databases(*.db *.sqlite *.data);;Any File Type (*)"))
-
-        if filename != "":
-            # noinspection PyTypeChecker
-            if os.path.splitext(filename)[-1].lower().lstrip('.') not in ["db", "data", "sqlite"]:
-                filename += ".data"
-            self.dockwidget.database_file.setText(filename)
-
-    def _on_select_db(self) -> None:
+    @property
+    def db_type(self) -> str:
         """
-        slot for selecting a sqlite database file and set the result to the related lineedit
+        Getter for the database type
+        :return: returns the current database type
+        """
+        return self.__db_type
+
+    @db_type.setter
+    def db_type(self, value: str) -> None:
+        """
+        setter for the database type
+        :return: Nothing
+        :raises ValueError: if value is not "SQLite" or "PostgreSQL"
+        """
+        value = str(value)
+
+        if value.lower() not in ("sqlite", "postgresql"):
+            raise ValueError("Unknown database format: {}".format(value))
+
+        self.__db_type = value.lower()
+
+    @property
+    def password(self) -> str:
+        """
+        Getter for the current password
+        :return: returns the current password
+        """
+        return self.__password
+
+    @password.setter
+    def password(self, value: str) -> None:
+        """
+        setter for the current password
         :return: Nothing
         """
+        self.__password = str(value)
 
-        self.__validate()
-
-        filename = get_file_name(QFileDialog.getOpenFileName(self.dockwidget, "Select database file", "",
-                                                             "Databases(*.db *.sqlite *.data);;Any File Type (*)"))
-
-        if filename != "":
-            # noinspection PyTypeChecker
-            if os.path.splitext(filename)[-1].lower().lstrip('.') not in ["db", "data", "sqlite"]:
-                filename += ".data"
-            self.dockwidget.database_file.setText(filename)
-
-    def _on_change_database(self, database: str) -> None:
+    @property
+    def username(self) -> str:
         """
-        Setting a new database connection
-        :param database: The new database connection string
+        Getter for the current username
+        :return: returns the current username
+        """
+        return self.__username
+
+    @username.setter
+    def username(self, value: str) -> None:
+        """
+        setter for the current username
         :return: Nothing
         """
-        self.__validate()
-
-        self.logger.debug(self.__class__.__name__, "New database: " + database)
+        self.__username = str(value)
 
     #
-    # private functions
+    # public functions
     #
 
-    def __validate(self):
+    def check_connection(self) -> str:
         """
-        Validates, if the service can be executed
-        :return: Nothing
-        :raises
+        Check database connection
+        :return: Error message if test fails, else empty string
+        :raises ValueError: if database type is unknown
         """
+        self.logger.debug("check_connection called")
 
-        self.logger.debug(self.__class__.__name__, "__validate")
+        try:
+            # noinspection SpellCheckingInspection
+            if self.db_type == "postgresql":
+                self.logger.debug("\tPostgreSQL connection")
+                # connection string: postgresql+psycopg2://user:password@host:port/dbname[?key=value&key=value...]
+                connection = "postgresql+psycopg2://{}:{}@{}".format(self.username, self.password, self.connection)
+            elif self.db_type == "sqlite":
+                self.logger.debug("\tSQLite connection")
+                connection = "sqlite:///{}".format(self.connection)
+            else:
+                raise ValueError("Unknown DB Format: {}".format(self.db_type))
 
-        if self.dockwidget is None:
-            raise AttributeError("No dockwidget is set to the DatabaseService")
+            self.logger.debug("\tconnecting to handler")
+            self.__handler = DBHandler(connection=connection, echo=False)
+            self.__session = self.__handler.get_session()
+            self.logger.debug("\tclosing connection")
+            self.__handler.close_last_session()
+            return ""
+
+        except Exception as e:
+            ExceptionHandling(e).log(True)
+            return str(e)

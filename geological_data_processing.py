@@ -97,9 +97,9 @@ class GeologicalDataProcessing:
         self.__models = dict()
         self.__views = dict()
 
-        self.__import_service = None
+        self.__db_controller = None
 
-    # noinspection PyMethodMayBeStatic
+        # noinspection PyMethodMayBeStatic
     def tr(self, message):
         """Get the translation for a string using Qt translation API.
 
@@ -263,19 +263,19 @@ class GeologicalDataProcessing:
             try:
                 # initialize logger
                 logger = QGISDebugLog()
-                # logger.qgis_iface = self.iface
+                logger.qgis_iface = self.iface
                 logger.save_to_file = True
 
                 if not ModuleService.check_required_modules():
                     return
 
-                from GeologicalDataProcessing.services.DatabaseService import DatabaseService
+                from GeologicalDataProcessing.controller.DatabaseController import DatabaseController
+                from GeologicalDataProcessing.controller.ImportController import LineImportController
+                from GeologicalDataProcessing.controller.ImportController import PointImportController
                 from GeologicalDataProcessing.services.ImportService import ImportService
-                from GeologicalDataProcessing.gui.controller.ImportController import PointImportController
-                from GeologicalDataProcessing.gui.controller.ImportController import LineImportController
-                from GeologicalDataProcessing.gui.views.ImportViews import PointImportView, LineImportView
+                from GeologicalDataProcessing.views.ImportViews import PointImportView, LineImportView
 
-                self.__import_service = ImportService.get_instance(self.dockwidget)
+                ImportService.get_instance(self.dockwidget)
 
                 # initialize the gui and connect signals and slots
                 self.dockwidget.import_type.currentChanged.connect(self.on_import_type_changed_event)
@@ -292,6 +292,9 @@ class GeologicalDataProcessing:
                 self.__views['import_lines'] = LineImportView(self.dockwidget)
                 self.__controllers['import_points'] = PointImportController(self.__views['import_points'])
                 self.__controllers['import_lines'] = LineImportController(self.__views['import_lines'])
+
+                self.__db_controller = DatabaseController(self.dockwidget)
+
             except Exception as e:
                 ExceptionHandling(e).log()
 

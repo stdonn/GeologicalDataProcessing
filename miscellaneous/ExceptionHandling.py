@@ -58,5 +58,10 @@ class ExceptionHandling:
         # noinspection PyCallByClass, PyArgumentList
         QgsMessageLog.logMessage(self.last_exception, level=2)
 
-    def log(self):
-        self.__logger.error("An exception occurred", self.last_exception)
+    def log(self, only_logfile: bool = False):
+        """
+        log the exception
+        :param only_logfile: Don't write output to QGIS interface, even if it is set
+        :return: nothing
+        """
+        self.__logger.error("An exception occurred", self.last_exception, only_logfile=only_logfile)

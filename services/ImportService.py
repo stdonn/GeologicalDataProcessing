@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import QFileDialog
 from GeologicalDataProcessing.config import debug
 from GeologicalDataProcessing.geological_data_processing import GeologicalDataProcessingDockWidget
 from GeologicalDataProcessing.miscellaneous.ExceptionHandling import ExceptionHandling
-from GeologicalDataProcessing.miscellaneous.QGISDebugLog import QGISDebugLog, LogLevel
+from GeologicalDataProcessing.miscellaneous.QGISDebugLog import QGISDebugLog
 from GeologicalDataProcessing.miscellaneous.Helper import get_file_name
 
 
@@ -39,10 +39,9 @@ class ImportService(QObject):
         """
 
         if ImportService.__instance is None:
-            if debug:
-                ImportService.logger.debug(ImportService.__class__.__name__, "Create new ImportService instance")
+            ImportService.logger.debug(ImportService.__class__.__name__, "Create new ImportService instance")
             ImportService(dwg)
-        elif debug:
+        else:
             ImportService.logger.debug(ImportService.__name__, "Returning existing ImportService instance")
 
         return ImportService.__instance
@@ -98,14 +97,12 @@ class ImportService(QObject):
             if self.__dwg is not None:
                 self.dockwidget.import_file.textChanged.disconnect(self._on_import_file_changed)
                 self.dockwidget.select_data_file_button.clicked.disconnect(self.__on_select_data_file)
-                self.dockwidget.working_dir_button.clicked.disconnect(self.__on_select_working_dir)
                 self.dockwidget.separator.currentIndexChanged[str].disconnect(self._on_separator_changed)
 
             self.__dwg = value
 
             self.dockwidget.import_file.textChanged.connect(self._on_import_file_changed)
             self.dockwidget.select_data_file_button.clicked.connect(self.__on_select_data_file)
-            self.dockwidget.working_dir_button.clicked.connect(self.__on_select_working_dir)
             self.dockwidget.separator.currentIndexChanged[str].connect(self._on_separator_changed)
 
             self.__dwg.separator.addItems([';', ',', '<tabulator>', '.', '-', '_', '/', '\\'])
@@ -135,32 +132,6 @@ class ImportService(QObject):
         self.__validate()
 
         self.dockwidget.import_file.setText(str(filename))
-
-    @property
-    def working_directory(self) -> str:
-        """
-        Returns the currently selected working directory
-        :return: returns the currently selected working directory
-        """
-        self.__validate()
-
-        return self.dockwidget.working_dir.text()
-
-    @working_directory.setter
-    def working_directory(self, work_dir: str) -> None:
-        """
-        working directory setter
-        :param work_dir: new working directory (or an empty path for in-memory usage)
-        :return: Nothing
-        :raises ValueError: if the path doesn't exist or isn't a directory
-        """
-        self.__validate()
-
-        work_dir = os.path.normpath(str(work_dir))
-        if (os.path.exists(work_dir) and os.path.isdir(work_dir)) or work_dir == "":
-            self.dockwidget.working_dir.setText(work_dir)
-        else:
-            raise ValueError("Committed value is not a directory: {}".format(work_dir))
 
     @property
     def separator(self) -> str:
@@ -302,7 +273,7 @@ class ImportService(QObject):
 
         if not os.path.isfile(os.path.normpath(filename)):
             self.reset()
-            self.logger.warn("Not a file", filename)
+            # self.logger.warn("Not a file", filename)
             return
 
         try:
