@@ -45,9 +45,14 @@ class ExceptionHandling:
         :param iface: QgisInterface representation
         :return: Nothing
         """
-        widget = iface.messageBar().createMessage("Error",
-                                                  "An exception occurred during the process. " +
-                                                  "For more details, please take a look to the log windows.")
+        split = self.last_exception.split('\n')
+        if len(split) > 1:
+            widget = iface.messageBar().createMessage("Error", self.last_exception.split('\n')[1])
+        else:
+            widget = iface.messageBar().createMessage("Error",
+                                                      "An exception occurred during the process. " +
+                                                      "For more details, please take a look to the log windows.")
+
         button = QPushButton(widget)
         button.setText("Show log windows")
         # noinspection PyUnresolvedReferences

@@ -4,6 +4,7 @@ module with a service providing all database related connections and functions
 """
 
 from GeologicalToolbox.DBHandler import DBHandler
+from sqlalchemy.orm.session import Session
 
 from GeologicalDataProcessing.miscellaneous.ExceptionHandling import ExceptionHandling
 from GeologicalDataProcessing.miscellaneous.QGISDebugLog import QGISDebugLog
@@ -126,33 +127,61 @@ class DatabaseService:
     # public functions
     #
 
+    def connect(self) -> None:
+        """
+        Connect a GeologicalToolbox-DBHandler
+        :return: Nothing
+        :raises ValueError: if database type is unknown
+        """
+        self.logger.debug("Connecting to a database: [{}]: {}".format(self.db_type, self.connection))
+        # noinspection SpellCheckingInspection
+        if self.db_type == "postgresql":
+            # connection string: postgresql+psycopg2://user:password@host:port/dbname[?key=value&key=value...]
+            connection = "postgresql+psycopg2://{}:{}@{}".format(self.username, self.password, self.connection)
+        elif self.db_type == "sqlite":
+            connection = "sqlite:///{}".format(self.connection)
+        else:
+            self.__handler = None
+            raise ValueError("Unknown DB Format: {}".format(self.db_type))
+
+        self.__handler = DBHandler(connection=connection, echo=False)
+
+    def get_session(self) -> Session:
+        """
+        return a sqlalchemy database session
+        :return: a sqlalchemy database session
+        :raises ConnectionError: if no database handler is connected
+        """
+        self.logger.debug("get or create a session")
+        if self.__handler is None:
+            self.__session = None
+            raise ConnectionError("No database handler found, please connect first")
+
+        self.__session = self.__handler.get_session()
+        return self.__session
+
+    def close_session(self) -> None:
+        """
+        close the current session if existing
+        :return: Nothing
+        """
+        self.logger.debug("Closing session")
+        if self.__session is not None:
+            self.__session.close()
+
     def check_connection(self) -> str:
         """
         Check database connection
         :return: Error message if test fails, else empty string
-        :raises ValueError: if database type is unknown
         """
         self.logger.debug("check_connection called")
 
         try:
-            # noinspection SpellCheckingInspection
-            if self.db_type == "postgresql":
-                self.logger.debug("\tPostgreSQL connection")
-                # connection string: postgresql+psycopg2://user:password@host:port/dbname[?key=value&key=value...]
-                connection = "postgresql+psycopg2://{}:{}@{}".format(self.username, self.password, self.connection)
-            elif self.db_type == "sqlite":
-                self.logger.debug("\tSQLite connection")
-                connection = "sqlite:///{}".format(self.connection)
-            else:
-                raise ValueError("Unknown DB Format: {}".format(self.db_type))
-
-            self.logger.debug("\tconnecting to handler")
-            self.__handler = DBHandler(connection=connection, echo=False)
-            self.__session = self.__handler.get_session()
-            self.logger.debug("\tclosing connection")
-            self.__handler.close_last_session()
+            self.connect()
+            self.get_session()
+            self.close_session()
             return ""
 
         except Exception as e:
-            ExceptionHandling(e).log(True)
+            ExceptionHandling(e).log(only_logfile=True)
             return str(e)
