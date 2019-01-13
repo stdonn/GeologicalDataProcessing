@@ -2,13 +2,16 @@
 """
 Defines controller for the data import_tests
 """
-
+from GeologicalToolbox.Geometries import GeoPoint, Line
+from GeologicalToolbox.Stratigraphy import StratigraphicObject
 from PyQt5.QtWidgets import QListWidget
 from typing import List
 
+from GeologicalToolbox.DBHandler import AbstractDBObject
 from GeologicalDataProcessing.views.ImportViews import ImportViewInterface, PointImportView, LineImportView
 from GeologicalDataProcessing.miscellaneous.ExceptionHandling import ExceptionHandling
 from GeologicalDataProcessing.miscellaneous.QGISDebugLog import QGISDebugLog
+from GeologicalDataProcessing.services.DatabaseService import DatabaseService
 from GeologicalDataProcessing.services.ImportService import ImportService
 
 # miscellaneous
@@ -34,11 +37,13 @@ class ImportControllersInterface:
         self._import_service.import_columns_changed.connect(self._on_import_columns_changed)
 
         self._view.selection_changed.connect(self._on_selection_changed)
+        self._view.dockwidget.start_import_button.clicked.connect(self._on_start_import)
 
         self._list_widget: QListWidget = None
         self._selectable_columns = []
         self._number_columns = []
         self._working_dir = []
+        self.__db_objects: List[AbstractDBObject] = list()
 
     def _on_import_columns_changed(self) -> None:
         """
@@ -63,6 +68,10 @@ class ImportControllersInterface:
         pass
 
     def _on_start_import(self) -> None:
+        """
+        Abstract slot. Has to be overridden to save the objects to the database
+        :return: Nothing
+        """
         pass
 
     def _on_selection_changed(self, selected_cols: List[str]) -> None:
@@ -130,6 +139,63 @@ class PointImportController(ImportControllersInterface):
             self.logger.error("Error", str(ExceptionHandling(e)))
             self._import_service.reset()
 
+    def _on_start_import(self):
+        """
+        Save the Point Object(s) to the database
+        :return: Nothing
+        """
+
+        if self._view.dockwidget.import_type.itemText(self._view.dockwidget.import_type.currentIndex()) != "Points":
+            return
+
+        data = self._import_service.read_import_file()
+
+        onekey = data[next(iter(data.keys()))]["values"]
+        # import json
+        # self.logger.info(json.dumps(onekey, indent=2))
+        count = len(onekey)
+
+        east = self._view.combobox_data("easting")
+        north = self._view.combobox_data("northing")
+        alt = self._view.combobox_data("altitude")
+        strat = self._view.combobox_data("strat")
+        age = self._view.combobox_data("strat_age")
+        set_name = self._view.combobox_data("set_name")
+        comment = self._view.combobox_data("comment")
+
+        service = DatabaseService.get_instance()
+        service.close_session()
+        service.connect()
+        session = DatabaseService.get_instance().get_session()
+
+        reference = self._import_service.get_crs()
+        if reference is None:
+            reference = ""
+        else:
+            reference = reference.toWkt()
+
+        self.logger.debug("Saving with reference system\n{}".format(reference))
+
+        for i in range(count):
+            if (data[east]["values"][i] == "") and (data[north]["values"][i] == ""):
+                continue
+
+            e = float(data[east]["values"][i])
+            n = float(data[north]["values"][i])
+            h = None if alt == "" else float(data[alt]["values"][i])
+            s = "" if strat == "" else data[strat]["values"][i]
+            a = -1 if age == "" else float(data[age]["values"][i])
+            sn = "" if set_name == "" else data[set_name]["values"][i]
+            c = "" if comment == "" else data[comment]["values"][i]
+
+            strat_obj = StratigraphicObject.init_stratigraphy(session, s, a)
+            point = GeoPoint(strat_obj, False if (h is None) else True, reference,
+                             e, n, 0 if (h is None) else h, session, sn, c)
+
+            point.save_to_db()
+
+        self.logger.info("Points successfully imported")
+
 
 class LineImportController(ImportControllersInterface):
     """
@@ -157,6 +223,7 @@ class LineImportController(ImportControllersInterface):
 
         super()._on_import_columns_changed()
         try:
+            self._view.set_combobox_data("identifier", [''] + self._import_service.selectable_columns, 1)
             self._view.set_combobox_data("easting", self._import_service.number_columns, 0)
             # noinspection SpellCheckingInspection
             self._view.set_combobox_data("northing", self._import_service.number_columns, 1)
@@ -171,3 +238,84 @@ class LineImportController(ImportControllersInterface):
         except Exception as e:
             self.logger.error("Error", str(ExceptionHandling(e)))
             self._view.reset_import()
+
+    def _on_start_import(self):
+        """
+        Save the Point Object(s) to the database
+        :return: Nothing
+        """
+
+        if self._view.dockwidget.import_type.itemText(self._view.dockwidget.import_type.currentIndex()) != "Lines":
+            return
+
+        data = self._import_service.read_import_file()
+
+        onekey = data[next(iter(data.keys()))]["values"]
+        # import json
+        # self.logger.info(json.dumps(onekey, indent=2))
+        count = len(onekey)
+
+        identifier = self._view.combobox_data("identifier")
+        east = self._view.combobox_data("easting")
+        north = self._view.combobox_data("northing")
+        alt = self._view.combobox_data("altitude")
+        strat = self._view.combobox_data("strat")
+        age = self._view.combobox_data("strat_age")
+        set_name = self._view.combobox_data("set_name")
+        comment = self._view.combobox_data("comment")
+
+        service = DatabaseService.get_instance()
+        service.close_session()
+        service.connect()
+        session = DatabaseService.get_instance().get_session()
+
+        reference = self._import_service.get_crs()
+        if reference is None:
+            reference = ""
+        else:
+            reference = reference.toWkt()
+
+        self.logger.debug("Saving with reference system\n{}".format(reference))
+
+        lines = dict()
+
+        line = 0
+
+        for i in range(count):
+            if identifier != "":
+                line = data[identifier]["values"][i]
+            elif (data[east]["values"][i] == "") and (data[north]["values"][i] == ""):
+                line += 1
+                continue
+
+            e = float(data[east]["values"][i])
+            n = float(data[north]["values"][i])
+            h = None if alt == "" else float(data[alt]["values"][i])
+            s = "" if strat == "" else data[strat]["values"][i]
+            a = -1 if age == "" else float(data[age]["values"][i])
+            sn = "" if set_name == "" else data[set_name]["values"][i]
+            c = "" if comment == "" else data[comment]["values"][i]
+
+            strat_obj = StratigraphicObject.init_stratigraphy(session, s, a)
+            point = GeoPoint(None, False if (h is None) else True, reference,
+                             e, n, 0 if (h is None) else h, session, sn, c)
+
+            if line in lines:
+                lines[line]["points"].append(point)
+            else:
+                lines[line] = {
+                    "strat": strat_obj,
+                    "points": [point]
+                }
+
+        for l in lines:
+            line = lines[l]
+            closed = False
+            if (len(line["points"]) > 1) and (line["points"][0] == line["points"][-1]):
+                closed = True
+                line["points"].pop()
+
+            new_line = Line(closed, line["strat"], line["points"], session, l, c)
+            new_line.save_to_db()
+
+        self.logger.info("Lines successfully imported")

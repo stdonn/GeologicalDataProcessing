@@ -6,7 +6,7 @@ module to provide the import service
 import inspect
 import os
 
-from typing import List
+from typing import Dict, List
 
 from qgis.core import QgsCoordinateReferenceSystem
 
@@ -101,6 +101,7 @@ class ImportService(QObject):
 
             self.__dwg = value
 
+            self.dockwidget.start_import_button.setEnabled(False)
             self.dockwidget.import_file.textChanged.connect(self._on_import_file_changed)
             self.dockwidget.select_data_file_button.clicked.connect(self.__on_select_data_file)
             self.dockwidget.separator.currentIndexChanged[str].connect(self._on_separator_changed)
@@ -167,6 +168,15 @@ class ImportService(QObject):
 
         self.dockwidget.separator.setCurrentText(sep)
 
+    def get_crs(self):
+        """
+        returns the selected coordinate reference system
+        :return: the selected coordinate reference system
+        """
+        # from qgis.gui import QgsProjectionSelectionWidget
+        # wdg = QgsProjectionSelectionWidget()
+        return self.dockwidget.reference.crs()
+
     @property
     def crs(self) -> QgsCoordinateReferenceSystem:
         """
@@ -177,7 +187,7 @@ class ImportService(QObject):
         """
         self.__validate()
 
-        return self.dockwidget.mQgsProjectionSelectionWidget.crs()
+        return self.dockwidget.reference.crs()
 
     @crs.setter
     def crs(self, _crs: QgsCoordinateReferenceSystem) -> None:
@@ -194,7 +204,7 @@ class ImportService(QObject):
         if not _crs.isValid():
             raise ValueError("committed reference system is not valid")
 
-        self.dockwidget.mQgsProjectionSelectionWidget.setCrs(_crs)
+        self.dockwidget.reference.setCrs(_crs)
 
     @property
     def selectable_columns(self) -> List[str]:
@@ -243,8 +253,65 @@ class ImportService(QObject):
 
         self.__selectable_columns = []
         self.__number_columns = []
+        self.dockwidget.start_import_button.setEnabled(False)
         self.import_file_changed.emit("")
         self.reset_import.emit()
+
+    def read_import_file(self) -> Dict:
+        """
+        Read the import file and return the resulting dictionary
+        :return: the resulting dictionary
+        """
+        self.logger.debug("reading import file {}".format(self.import_file))
+
+        try:
+            separator = self.separator
+            if separator == "<tabulator>":
+                separator = '\t'
+
+            result = dict()
+
+            with open(os.path.normpath(self.import_file), 'r') as import_file:
+
+                cols = import_file.readline().strip().split(separator)
+                props = import_file.readline().strip().split(separator)
+
+                if len(cols) < 2:
+                    raise ImportError("Cannot read import file, not enough columns for selected separator")
+
+                self.logger.debug("cols:\t{}".format(cols))
+                self.logger.debug("props:\t{}".format(props))
+
+                for i in range(0, len(cols)):
+                    try:
+                        p = props[i]
+                    except IndexError:
+                        p = ""
+
+                    result[cols[i]] = {
+                        "property": p,
+                        "values": list()
+                    }
+
+                for line in import_file:
+                    line = line.strip().split(separator)
+                    for i in range(0, len(line)):
+                        if i >= len(cols):
+                            break
+
+                        result[cols[i]]["values"].append(line[i])
+
+                    # fill the rest with empty values
+                    for i in range(len(line), len(cols)):
+                        result[cols[i]]["values"].append("")
+
+            return result
+
+        except IOError:
+            ("Cannot open file", "{}".format(self.import_file))
+        except Exception as e:
+            self.logger.error("Error", str(ExceptionHandling(e)))
+            self.reset()
 
     #
     # slots
@@ -307,14 +374,15 @@ class ImportService(QObject):
                     pass
 
             if len(nr_cols) < 3:
-                self.logger.error("Not enough columns",
-                                  "Cannot find enough columns. " +
-                                  "Maybe use a different separator or another import_tests file")
+                self.logger.warn("Not enough columns",
+                                 "Cannot find enough columns. " +
+                                 "Maybe use a different separator or another import_tests file")
                 self.reset()
                 return
 
             self.__number_columns = [cols[x] for x in nr_cols]
             self.__selectable_columns = cols
+            self.dockwidget.start_import_button.setEnabled(True)
             self.import_file_changed.emit(filename)
             self.import_columns_changed.emit()
 
@@ -350,14 +418,15 @@ class ImportService(QObject):
             # add relative path to test-data
             path = os.path.join(path, "../../tests/test_data")
 
+        # noinspection PyCallByClass,PyArgumentList
         filename = get_file_name(QFileDialog.getOpenFileName(self.dockwidget, "Select data file", path,
                                                              "Data Files(*.txt *.csv *.data);;Any File Type (*)"))
-
         if filename != "":
             try:
                 import_file = open(filename, 'r')
             except IOError as e:
                 self.logger.error("Cannot open file", e)
+                self.dockwidget.start_import_button.setEnabled(False)
                 return
 
             cols = import_file.readline().strip()
@@ -378,30 +447,3 @@ class ImportService(QObject):
                 self.separator = sep
                 self.import_file = filename
                 break
-
-    def __on_select_working_dir(self) -> None:
-        """
-        slot for selecting an import_tests data file and processing the corresponding fields inside the import_tests
-        data tab.
-        :return: Nothing
-        """
-        self.__validate()
-
-        self.logger.debug(self.__class__.__name__, "_on_select_working_dir")
-
-        path = ""
-        if debug:
-            # get current module path
-            path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-            # add relative path to test-data
-            path = os.path.join(path, "../../tests/test_data")
-
-        dirname = get_file_name(QFileDialog.getExistingDirectory(self.dockwidget, "Select working directory", path,
-                                                                 QFileDialog.ShowDirsOnly |
-                                                                 QFileDialog.DontResolveSymlinks))
-
-        if dirname != "" and os.path.isdir(dirname):
-            self.working_directory = dirname
-        else:
-            self.working_directory = ""
-            self.logger.error("Cannot set working directory: ", dirname)

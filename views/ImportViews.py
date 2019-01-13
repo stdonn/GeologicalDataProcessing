@@ -73,6 +73,14 @@ class ImportViewInterface(QObject):
         self.__combos = combo_dict
         [self.__combos[key].currentTextChanged.connect(self._on_selection_change) for key in self.__combos]
 
+    @property
+    def dockwidget(self) -> GeologicalDataProcessingDockWidget:
+        """
+        Returns the current dockwidget
+        :return: the current dockwidget
+        """
+        return self.__dwg
+
     #
     # signals
     #
@@ -219,6 +227,7 @@ class LineImportView(ImportViewInterface):
         # summarize import_tests Widgets
         # noinspection SpellCheckingInspection
         self.combobox_names = {
+            "identifier": self._import_service.dockwidget.identifier_lines,
             "easting": self._import_service.dockwidget.easting_lines,
             "northing": self._import_service.dockwidget.northing_lines,
             "altitude": self._import_service.dockwidget.altitude_lines,
