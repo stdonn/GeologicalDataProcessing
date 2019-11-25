@@ -15,7 +15,7 @@ from qgis.gui import QgisInterface
 
 class TestPointImportClass(unittest.TestCase):
     """
-    This is a unittest class for the miscellaneous.ExceptionHandling.ExceptionHandling class
+    This is a unittest class for the miscellaneous.ExceptionHandler.ExceptionHandler class
     """
 
     def __init__(self, *args, iface: QgisInterface, dockwidget: GeologicalDataProcessingDockWidget) -> None:

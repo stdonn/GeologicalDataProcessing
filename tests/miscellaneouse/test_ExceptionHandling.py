@@ -1,15 +1,15 @@
 # -*- coding: UTF-8 -*-
 """
-Module for unittests of the ExceptionHandling module
+Module for unittests of the ExceptionHandler module
 """
 
 import unittest
 
-from GeologicalDataProcessing.miscellaneous.ExceptionHandling import ExceptionHandling
+from GeologicalDataProcessing.miscellaneous.exception_handler import ExceptionHandler
 
 class TestExceptionHandlingClass(unittest.TestCase):
     """
-    This is a unittest class for the miscellaneous.ExceptionHandling.ExceptionHandling class
+    This is a unittest class for the miscellaneous.ExceptionHandler.ExceptionHandler class
     """
     def setUp(self) -> None:
         """
@@ -24,8 +24,8 @@ class TestExceptionHandlingClass(unittest.TestCase):
         test for the correct functionality of the singleton pattern
         :return: Nothing
         """
-        object_1 = ExceptionHandling()
-        object_2 = ExceptionHandling()
+        object_1 = ExceptionHandler()
+        object_2 = ExceptionHandler()
         self.assertEqual(object_1, object_2)
         self.assertEqual(id(object_1), id(object_2))
 

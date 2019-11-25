@@ -3,11 +3,10 @@
 module with a service providing all database related connections and functions
 """
 
-from GeologicalToolbox.DBHandler import DBHandler
+from geological_toolbox.db_handler import DBHandler
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm.session import Session
-
-from GeologicalDataProcessing.miscellaneous.ExceptionHandling import ExceptionHandling
-from GeologicalDataProcessing.miscellaneous.QGISDebugLog import QGISDebugLog
+from GeologicalDataProcessing.miscellaneous.qgis_log_handler import QGISLogHandler
 
 
 class DatabaseService:
@@ -16,7 +15,7 @@ class DatabaseService:
     """
     __instance = None
 
-    logger = QGISDebugLog()
+    logger = QGISLogHandler("DatabaseService")
 
     @staticmethod
     def get_instance() -> "DatabaseService":
@@ -25,10 +24,10 @@ class DatabaseService:
         :return: The single instance of this class
         """
         if DatabaseService.__instance is None:
-            DatabaseService.logger.debug(DatabaseService.__class__.__name__, "Create new DatabaseService instance")
+            DatabaseService.logger.debug("Create new DatabaseService instance")
             DatabaseService()
         else:
-            DatabaseService.logger.debug(DatabaseService.__name__, "Returning existing DatabaseService instance")
+            DatabaseService.logger.debug("Returning existing DatabaseService instance")
 
         return DatabaseService.__instance
 
@@ -182,6 +181,6 @@ class DatabaseService:
             self.close_session()
             return ""
 
-        except Exception as e:
-            ExceptionHandling(e).log(only_logfile=True)
+        except DBAPIError as e:
+            # ExceptionHandler(e).log(only_logfile=True)
             return str(e)

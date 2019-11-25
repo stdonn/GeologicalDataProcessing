@@ -1,5 +1,7 @@
 <RCC>
   <qresource prefix="/plugins/GeologicalDataProcessing">
+    <file>images/Schlaegel_und_Eisen_nach_DIN_21800.svg</file>
+    <file>images/ic_settings_48px_2.svg</file>
     <file>images/ic_update_48px.svg</file>
     <file>images/start_import.svg</file>
     <file>icon.png</file>

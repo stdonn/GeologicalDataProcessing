@@ -27,11 +27,12 @@ from io import StringIO
 
 from PyQt5.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QAction
+from PyQt5.QtWidgets import QAction, QMessageBox
 
 # Import the code for the DockWidget
 from GeologicalDataProcessing.geological_data_processing_dockwidget import GeologicalDataProcessingDockWidget
-from GeologicalDataProcessing.miscellaneous.QGISDebugLog import QGISDebugLog, LogLevel
+from GeologicalDataProcessing.miscellaneous.qgis_log_handler import QGISLogHandler, LogLevel
+from GeologicalDataProcessing.settings_dialog import SettingsDialog
 # Initialize Qt resources from file resources.py
 # noinspection PyUnresolvedReferences
 from GeologicalDataProcessing.resources import *
@@ -41,11 +42,12 @@ from GeologicalDataProcessing.tests.miscellaneouse.test_ExceptionHandling import
 from GeologicalDataProcessing.tests.import_tests.test_point_import import TestPointImportClass
 
 # miscellaneous
-from GeologicalDataProcessing.config import debug
-from GeologicalDataProcessing.miscellaneous.ExceptionHandling import ExceptionHandling
+import GeologicalDataProcessing.config as config
+from GeologicalDataProcessing.miscellaneous.config_handler import ConfigHandler
+from GeologicalDataProcessing.miscellaneous.exception_handler import ExceptionHandler
 
 # import module tests
-from GeologicalDataProcessing.services.ModuleService import ModuleService
+from GeologicalDataProcessing.services.module_service import ModuleService, packages_found
 
 
 class GeologicalDataProcessing:
@@ -88,6 +90,8 @@ class GeologicalDataProcessing:
 
         self.pluginIsActive = False
         self.dockwidget = None
+        self.settings_dialog = None
+        self.__config = ConfigHandler()
 
         # user defined class variables
         self.__current_selected_tab = "Points"
@@ -100,6 +104,7 @@ class GeologicalDataProcessing:
         self.__db_controller = None
 
         # noinspection PyMethodMayBeStatic
+
     def tr(self, message):
         """Get the translation for a string using Qt translation API.
 
@@ -239,41 +244,57 @@ class GeologicalDataProcessing:
         if not self.pluginIsActive:
             self.pluginIsActive = True
 
-            # print "** STARTING GeologicalDataProcessing"
-
-            # dockwidget may not exist if:
-            #    first run of plugin
-            #    removed on close (see self.onClosePlugin method)
-            if self.dockwidget is None:
-                # Create the dockwidget (after translation) and keep reference
-                self.dockwidget = GeologicalDataProcessingDockWidget()
-
-            # connect to provide cleanup on closing of dockwidget
-            self.dockwidget.closingPlugin.connect(self.onClosePlugin)
-
-            # show the dockwidget
-            # TODO: fix to allow choice of dock location
-            self.iface.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget)
-            self.dockwidget.show()
-
-            #
-            # manual added content
-            #
-
             try:
                 # initialize logger
-                logger = QGISDebugLog()
+                logger = QGISLogHandler()
                 logger.qgis_iface = self.iface
                 logger.save_to_file = True
 
-                if not ModuleService.check_required_modules():
-                    return
+                if packages_found == "NO_PACKAGES" or not ModuleService.check_required_modules():
+                    logger.info("installing or updating packages")
+                    if not ModuleService.install_packages():
+                        logger.error("package installation failed, please restart QGIS to try again.")
+                    else:
+                        logger.info("package installation successful, please restart QGIS")
+                        msg = QMessageBox()
+                        msg.setIcon(QMessageBox.Information)
+                        msg.setText("packages installation successful")
+                        msg.setInformativeText("Please restart QGIS to use the GeologicalDataProcessing extension")
 
-                from GeologicalDataProcessing.controller.DatabaseController import DatabaseController
-                from GeologicalDataProcessing.controller.ImportController import LineImportController
-                from GeologicalDataProcessing.controller.ImportController import PointImportController
-                from GeologicalDataProcessing.services.ImportService import ImportService
-                from GeologicalDataProcessing.views.ImportViews import PointImportView, LineImportView
+                        msg.setWindowTitle("package update")
+                        msg.exec_()
+                        return
+
+                    return
+                else:
+                    logger.debug("all required packages up2date")
+
+                # dockwidget may not exist if:
+                #    first run of plugin
+                #    removed on close (see self.onClosePlugin method)
+                if self.dockwidget is None:
+                    # Create the dockwidget (after translation) and keep reference
+                    self.dockwidget = GeologicalDataProcessingDockWidget()
+
+                if self.settings_dialog is None:
+                    self.settings_dialog = SettingsDialog(parent=self.dockwidget)
+                    self.settings_dialog.setModal(True)
+                    self.dockwidget.settings_button.clicked.connect(self.settings_dialog.exec)
+
+                # connect to provide cleanup on closing of dockwidget
+                self.dockwidget.closingPlugin.connect(self.onClosePlugin)
+
+                # show the dockwidget
+                # TODO: fix to allow choice of dock location
+                self.iface.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget)
+                self.dockwidget.show()
+
+                from GeologicalDataProcessing.controller.database_controller import DatabaseController
+                from GeologicalDataProcessing.controller.import_controller import LineImportController
+                from GeologicalDataProcessing.controller.import_controller import PointImportController
+                from GeologicalDataProcessing.controller.import_controller import WellImportController
+                from GeologicalDataProcessing.services.import_service import ImportService
+                from GeologicalDataProcessing.views.import_views import LineImportView, PointImportView, WellImportView
 
                 ImportService.get_instance(self.dockwidget)
 
@@ -282,21 +303,30 @@ class GeologicalDataProcessing:
 
                 # start tests button
                 # -> only visible and active when the debug flag is True
-                if debug:
+                if config.debug:
                     self.dockwidget.start_tests_button.clicked.connect(self.on_start_tests)
                 else:
-                    self.dockwidget.start_tests_separator.setVisible(False)
                     self.dockwidget.start_tests_button.setVisible(False)
+                    self.dockwidget.start_tests_separator.setVisible(False)
+
+                self.dockwidget.progress_bar_layout.setVisible(False)
 
                 self.__views['import_points'] = PointImportView(self.dockwidget)
                 self.__views['import_lines'] = LineImportView(self.dockwidget)
-                self.__controllers['import_points'] = PointImportController(self.__views['import_points'])
-                self.__controllers['import_lines'] = LineImportController(self.__views['import_lines'])
+                self.__views['import_wells'] = WellImportView(self.dockwidget)
+                # self.__controllers['import_points'] = PointImportController(self.__views['import_points'])
+                # self.__controllers['import_lines'] = LineImportController(self.__views['import_lines'])
+                # self.__controllers['import_wells'] = WellImportController(self.__views['import_wells'])
 
-                self.__db_controller = DatabaseController(self.dockwidget)
+                self.__db_controller = DatabaseController(self.settings_dialog)
+
+                if config.debug:
+                    self.dockwidget.import_file.setText(
+                        "/Users/stephan/Library/Application Support/QGIS/QGIS3/profiles/" +
+                        "default/python/plugins/GeologicalDataProcessing/tests/test_data/point_data.txt")
 
             except Exception as e:
-                ExceptionHandling(e).log()
+                ExceptionHandler(e).log()
 
     #
     # user defined functions
@@ -320,7 +350,7 @@ class GeologicalDataProcessing:
         start a test suite
         :return: Nothing
         """
-        debug_log = QGISDebugLog()
+        debug_log = QGISLogHandler(GeologicalDataProcessing.__name__)
         debug_log.qgis_iface = self.iface
         debug_log.save_to_file = True
 

@@ -13,11 +13,11 @@ from qgis.core import QgsCoordinateReferenceSystem
 from PyQt5.QtCore import pyqtSignal, QObject
 from PyQt5.QtWidgets import QFileDialog
 
-from GeologicalDataProcessing.config import debug
+import GeologicalDataProcessing.config as config
 from GeologicalDataProcessing.geological_data_processing import GeologicalDataProcessingDockWidget
-from GeologicalDataProcessing.miscellaneous.ExceptionHandling import ExceptionHandling
-from GeologicalDataProcessing.miscellaneous.QGISDebugLog import QGISDebugLog
-from GeologicalDataProcessing.miscellaneous.Helper import get_file_name
+from GeologicalDataProcessing.miscellaneous.exception_handler import ExceptionHandler
+from GeologicalDataProcessing.miscellaneous.qgis_log_handler import QGISLogHandler
+from GeologicalDataProcessing.miscellaneous.helper import get_file_name
 
 
 class ImportService(QObject):
@@ -29,7 +29,7 @@ class ImportService(QObject):
     __selectable_columns: List[str] = []
     __number_columns: List[str] = []
 
-    logger = QGISDebugLog()
+    logger = QGISLogHandler("ImportService")
 
     @staticmethod
     def get_instance(dwg: GeologicalDataProcessingDockWidget = None) -> "ImportService":
@@ -41,8 +41,6 @@ class ImportService(QObject):
         if ImportService.__instance is None:
             ImportService.logger.debug(ImportService.__class__.__name__, "Create new ImportService instance")
             ImportService(dwg)
-        else:
-            ImportService.logger.debug(ImportService.__name__, "Returning existing ImportService instance")
 
         return ImportService.__instance
 
@@ -212,7 +210,7 @@ class ImportService(QObject):
         Returns a list of selectable columns
         :return: Returns a list of selectable columns
         """
-        return self.__selectable_columns
+        return ImportService.__selectable_columns
 
     @property
     def number_columns(self) -> List[str]:
@@ -220,7 +218,7 @@ class ImportService(QObject):
         Returns a list of number columns
         :return: Returns a list of number columns
         """
-        return self.__number_columns
+        return ImportService.__number_columns
 
     #
     # private functions
@@ -232,8 +230,6 @@ class ImportService(QObject):
         :return: Nothing
         :raises
         """
-
-        self.logger.debug(self.__class__.__name__, "__validate")
 
         if self.dockwidget is None:
             raise AttributeError("No dockwidget is set to the ImportService")
@@ -249,10 +245,10 @@ class ImportService(QObject):
         """
         self.__validate()
 
-        self.logger.debug(self.__class__.__name__, "reset")
+        self.logger.debug("reset")
 
-        self.__selectable_columns = []
-        self.__number_columns = []
+        ImportService.__selectable_columns = []
+        ImportService.__number_columns = []
         self.dockwidget.start_import_button.setEnabled(False)
         self.import_file_changed.emit("")
         self.reset_import.emit()
@@ -310,7 +306,7 @@ class ImportService(QObject):
         except IOError:
             ("Cannot open file", "{}".format(self.import_file))
         except Exception as e:
-            self.logger.error("Error", str(ExceptionHandling(e)))
+            self.logger.error("Error", str(ExceptionHandler(e)))
             self.reset()
 
     #
@@ -324,7 +320,7 @@ class ImportService(QObject):
         """
         self.__validate()
 
-        self.logger.debug(self.__class__.__name__, "_on_crs_changed")
+        self.logger.debug("_on_crs_changed")
 
         self.crs_changed.emit(self.dockwidget.mQgsProjectionSelectionWidget.crs())
 
@@ -336,7 +332,7 @@ class ImportService(QObject):
         """
         self.__validate()
 
-        self.logger.debug(self.__class__.__name__, "_on_import_file_changed")
+        self.logger.debug("_on_import_file_changed")
 
         if not os.path.isfile(os.path.normpath(filename)):
             self.reset()
@@ -355,7 +351,15 @@ class ImportService(QObject):
                 self.logger.error("Cannot open file", "{}".format(filename))
                 return
 
-            cols = import_file.readline().strip().split(separator)
+            cols = import_file.readline().strip()
+
+            if len(cols.split(separator)) < 3:
+                self.separator = self.find_separator(cols)
+                separator = self.separator
+                self.logger.debug("Selected another separator: {}"
+                                  .format("<tabulator>" if separator == '\t' else separator))
+
+            cols = cols.split(separator)
             props = import_file.readline().strip().split(separator)
             data = import_file.readline().strip().split(separator)
 
@@ -376,19 +380,27 @@ class ImportService(QObject):
             if len(nr_cols) < 3:
                 self.logger.warn("Not enough columns",
                                  "Cannot find enough columns. " +
-                                 "Maybe use a different separator or another import_tests file")
+                                 "Maybe use a different separator or another import file")
                 self.reset()
                 return
 
-            self.__number_columns = [cols[x] for x in nr_cols]
-            self.__selectable_columns = cols
+            ImportService.__number_columns = [cols[x] for x in nr_cols]
+            ImportService.__selectable_columns = cols
             self.dockwidget.start_import_button.setEnabled(True)
             self.import_file_changed.emit(filename)
             self.import_columns_changed.emit()
 
         except Exception as e:
-            self.logger.error("Error", str(ExceptionHandling(e)))
+            self.logger.error("Error", str(ExceptionHandler(e)))
             self.reset()
+
+    @staticmethod
+    def find_separator(line: str) -> str:
+        for sep in [';', ',', '\t', '.', '-', '_', '/', '\\']:
+            if len(line.split(sep)) >= 3:
+                return sep
+        else:
+            return ';'
 
     def _on_separator_changed(self, _: str = "") -> None:
         """
@@ -398,7 +410,7 @@ class ImportService(QObject):
         """
         self.__validate()
 
-        self.logger.debug(self.__class__.__name__, "_on_separator_changed")
+        self.logger.debug("_on_separator_changed")
 
         self._on_import_file_changed(self.import_file)
 
@@ -409,10 +421,10 @@ class ImportService(QObject):
         """
         self.__validate()
 
-        self.logger.debug(self.__class__.__name__, "_on_select_data_file")
+        self.logger.debug("_on_select_data_file")
 
         path = ""
-        if debug:
+        if config.debug:
             # get current module path
             path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
             # add relative path to test-data

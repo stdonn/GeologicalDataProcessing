@@ -12,4 +12,4 @@ You have to download the tool and save it into your QGIS Plugin directory. After
 
 ## System Requirements
 
-This toolbox was tested with QGIS version 2.18.14 and 2.18.16. It requires the [GeologicalToolbox](https://github.com/stdonn/GeologicalToolbox).
+This toolbox was tested with QGIS version >= 3.0. It requires the [GeologicalToolbox](https://github.com/stdonn/GeologicalToolbox).

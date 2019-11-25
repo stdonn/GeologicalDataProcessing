@@ -10,18 +10,18 @@ from PyQt5.QtWidgets import QPushButton
 from qgis.core import QgsMessageLog
 from qgis.gui import QgisInterface
 
-from GeologicalDataProcessing.miscellaneous.QGISDebugLog import QGISDebugLog
+from GeologicalDataProcessing.miscellaneous.qgis_log_handler import QGISLogHandler
 
 
-class ExceptionHandling:
+class ExceptionHandler:
     """
     Singleton class for basic exception handling
     """
-    __instance: "ExceptionHandling" = None
+    __instance: "ExceptionHandler" = None
     last_exception: str = ""
-    __logger: QGISDebugLog = QGISDebugLog()
+    __logger: QGISLogHandler = QGISLogHandler("ExceptionHandler")
 
-    def __new__(cls, e: Exception = None) -> "ExceptionHandling":
+    def __new__(cls, e: Exception = None) -> "ExceptionHandler":
         if cls.__instance is None:
             cls.__instance = object.__new__(cls)
 

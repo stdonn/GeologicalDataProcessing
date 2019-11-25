@@ -1,14 +1,18 @@
 # -*- coding: UTF-8 -*-
 """
-configuration file for the QGIS-Plugin
+plugin configuration
 """
 debug = True
 """
-Set the debug mode on (True) or off (False). Displays additional values 
+Set the general debug logging on (True) or off (False)
+Can be edited individually in users config file ($HOME/.geological_data_processing)
+    section: [General], option: debug
 """
 
 module_list = {
-    "GeologicalToolbox": "0.1.4b3"
+    "packaging": "19.1",
+    "GeologicalToolbox": "0.3.0.b7",
+    "keyring": "19.2.0"
 }
 """
 Dictionary of required modules and related versions

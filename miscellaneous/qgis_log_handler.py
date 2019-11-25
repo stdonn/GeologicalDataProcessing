@@ -12,7 +12,7 @@ from enum import Enum
 # noinspection PyUnresolvedReferences
 from qgis.gui import QgisInterface
 
-from GeologicalDataProcessing.config import debug
+import GeologicalDataProcessing.config as config
 
 
 class LogLevel(Enum):
@@ -22,7 +22,7 @@ class LogLevel(Enum):
     DEBUG = 3
 
 
-class QGISDebugLog:
+class QGISLogHandler:
     """
     Singleton class for pushing log messages to QGIS and / or a log file
     """
@@ -31,15 +31,18 @@ class QGISDebugLog:
     __logfile = ""
     __to_file = False
 
-    def __new__(cls) -> "QGISDebugLog":
-        """
-        Creates a new object instance if no object exists or updates the existing one.
-        :return: The single instance of this class
-        """
-        if cls.__instance is None:
-            cls.__instance = object.__new__(cls)
+    # def __new__(cls) -> "QGISLogHandler":
+    #     """
+    #     Creates a new object instance if no object exists or updates the existing one.
+    #     :return: The single instance of this class
+    #     """
+    #     if cls.__instance is None:
+    #         cls.__instance = object.__new__(cls)
+    #
+    #     return cls.__instance
 
-        return cls.__instance
+    def __init__(self, name=""):
+        self.name = name
 
     def __push_to_logfile(self, title: str, text: str = None, level: LogLevel = LogLevel.INFO) -> None:
         """
@@ -52,13 +55,16 @@ class QGISDebugLog:
         if self.__logfile == "":
             assert "log file not known..."
 
-        if (level != LogLevel.DEBUG) or debug:
+        if (level != LogLevel.DEBUG) or config.debug:
             with open(self.__logfile, "a") as logfile:
-                time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                line = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                if self.name != "":
+                    line = "{} - {}".format(line, self.name)
+                line = "{} - {} - {}".format(line, level.name, title)
                 if text is not None:
-                    logfile.write("{}  [{}]  {}: {}\n".format(time, level.name, title, text))
-                else:
-                    logfile.write("{}  [{}]  {}\n".format(time, level.name, title))
+                    line = "{}: {}".format(line, text)
+
+                logfile.write("{}\n".format(line))
 
     def __push_to_qgis(self, title: str, text: str, level: LogLevel = LogLevel.INFO) -> None:
         """
@@ -152,7 +158,7 @@ class QGISDebugLog:
         Return the path of the current logfile. This path will be empty if no logfile is defined.
         :return: Return the path of the current logfile
         """
-        return self.__logfile
+        return QGISLogHandler.__logfile
 
     @property
     def save_to_file(self) -> bool:
@@ -160,7 +166,7 @@ class QGISDebugLog:
         Returns True, if the messages should be saved to the a log file, else False
         :return: Returns True, if the messages should be saved to the a log file, else False
         """
-        return self.__to_file
+        return QGISLogHandler.__to_file
 
     @save_to_file.setter
     def save_to_file(self, to_file: bool) -> None:
@@ -170,16 +176,16 @@ class QGISDebugLog:
         :return: Nothing
         """
 
-        self.__to_file = bool(to_file)
+        QGISLogHandler.__to_file = bool(to_file)
 
         if not to_file:
-            self.__logfile = ""
+            QGISLogHandler.__logfile = ""
             return
 
-        if self.__logfile == "":
+        if QGISLogHandler.__logfile == "":
             # cur_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             tempdir = '/tmp' if platform.system() == 'Darwin' else tempfile.gettempdir()
-            self.__logfile = os.path.join(tempdir, "GeologicalDataProcessing.log")
+            QGISLogHandler.__logfile = os.path.join(tempdir, "GeologicalDataProcessing.log")
 
     @property
     def qgis_iface(self) -> QgisInterface or None:
@@ -187,17 +193,17 @@ class QGISDebugLog:
         Returns the currently set QgsInterface class or None if messages shouldn't be pushed to QGIS
         :return: Returns the currently set QgsInterface class or None
         """
-        return self.__iface
+        return QGISLogHandler.__iface
 
     @qgis_iface.setter
-    def qgis_iface(self, iface: QgisInterface):
+    def qgis_iface(self, iface: QgisInterface or None):
         """
         Sets the qgis interface. If the iface parameter is None, no messages will be pushed to QGIS.
         :param iface: The qgis interface. If this parameter is None, no messages will be pushed to QGIS.
         :return: Nothing
         :raises TypeError: if iface is not an instance of QgisInterface
         """
-        if not isinstance(iface, QgisInterface):
+        if not isinstance(iface, QgisInterface) and iface is not None:
             raise TypeError("iface parameter is not an instance of QgisInterface!")
 
-        self.__iface = iface
+        QGISLogHandler.__iface = iface
