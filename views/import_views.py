@@ -5,9 +5,11 @@ This module defines views for import processing
 
 from enum import IntEnum, unique
 from typing import Dict, List
-from PyQt5.QtCore import pyqtSignal, QObject
+from PyQt5.QtCore import pyqtSignal, QObject, QThread
 from PyQt5.QtWidgets import QComboBox, QListWidget
 
+from GeologicalDataProcessing.controller.import_controller import PointImportController, LineImportController, \
+    WellImportController
 from GeologicalDataProcessing.geological_data_processing_dockwidget import GeologicalDataProcessingDockWidget
 from GeologicalDataProcessing.miscellaneous.qgis_log_handler import QGISLogHandler
 from GeologicalDataProcessing.services.import_service import ImportService
@@ -39,7 +41,7 @@ class ImportViewInterface(QObject):
 
         self.logger = QGISLogHandler(ImportViewInterface.__name__)
         self.__combos = dict()
-        self.__dwg = dock_widget
+        self._dwg = dock_widget
 
         # initialize user interface
         self._import_service = ImportService.get_instance()
@@ -47,6 +49,8 @@ class ImportViewInterface(QObject):
         self._import_service.import_columns_changed.connect(self._on_import_columns_changed)
 
         self._list_widget: QListWidget or None = None
+        self._dwg.start_import_button.clicked.connect(self._on_start_import)
+        self._controller_thread: QThread or None = None
 
         super().__init__()
 
@@ -106,7 +110,7 @@ class ImportViewInterface(QObject):
         Returns the current dockwidget
         :return: the current dockwidget
         """
-        return self.__dwg
+        return self._dwg
 
     #
     # signals
@@ -140,10 +144,11 @@ class ImportViewInterface(QObject):
         self.logger.debug("selected_cols: " + str(selection_list))
         self.logger.debug("additional cols: " + str(cols))
 
-        self._list_widget.show()
-        self._list_widget.setEnabled(True)
-        self._list_widget.clear()
-        self._list_widget.addItems(cols)
+        if self._list_widget is not None:
+            self._list_widget.show()
+            self._list_widget.setEnabled(True)
+            self._list_widget.clear()
+            self._list_widget.addItems(cols)
 
     def _on_import_columns_changed(self) -> None:
         """
@@ -155,7 +160,28 @@ class ImportViewInterface(QObject):
         self.on_selection_changed()
 
     def _on_start_import(self) -> None:
-        pass
+        self.logger.debug("(Interface) _on_start_import")
+        self._update_progress_bar(0)
+        self._dwg.progress_bar_layout.setVisible(True)
+
+    def _on_import_failed(self, msg: str) -> None:
+        self.logger.debug("(Interface) _on_import_failed")
+        self.__import_finished()
+        self.logger.error("Import failed", msg)
+
+    def _on_import_successful(self):
+        self.logger.debug("(Interface) _on_import_successful")
+        self.__import_finished()
+
+    def _on_cancel_import(self):
+        self._controller_thread.cancel_import("Import canceled by user")
+
+    def __import_finished(self):
+        self._dwg.progress_bar_layout.setVisible(False)
+        self._disconnect_thread()
+
+        self._controller_thread.wait(2000)
+        self._controller_thread = None
 
     #
     # public functions
@@ -251,9 +277,9 @@ class ImportViewInterface(QObject):
         if value < 0:
             self.dockwidget.progress_bar.setValue(0)
         elif value > 100:
-            self.progress_bar.setValue(100)
+            self.dockwidget.progress_bar.setValue(100)
         else:
-            self.progress_bar.setValue(int(value))
+            self.dockwidget.progress_bar.setValue(int(value))
 
     def _connect_selection_changed(self):
         [self.__combos[key].currentTextChanged.connect(self.on_selection_changed) for key in self.__combos]
@@ -265,6 +291,18 @@ class ImportViewInterface(QObject):
             except TypeError:
                 # not connected
                 pass
+
+    def _connect_thread(self):
+        self._controller_thread.import_finished.connect(self._on_import_successful)
+        self._controller_thread.import_failed.connect(self._on_import_failed)
+        self._controller_thread.update_progress.connect(self._update_progress_bar)
+        self._dwg.cancel_import.clicked.connect(self._on_cancel_import)
+
+    def _disconnect_thread(self):
+        self._controller_thread.import_finished.disconnect(self._on_import_successful)
+        self._controller_thread.import_failed.disconnect(self._on_import_failed)
+        self._controller_thread.update_progress.disconnect(self._update_progress_bar)
+        self._dwg.cancel_import.clicked.disconnect(self._on_cancel_import)
 
 
 class PointImportView(ImportViewInterface):
@@ -294,7 +332,7 @@ class PointImportView(ImportViewInterface):
             "comment": self._import_service.dockwidget.comment_points
         }
 
-    def get_property_columns(self):
+    def get_property_columns(self) -> List[str]:
         return [item.text() for item in self.dockwidget.import_columns_points.selectedItems()]
 
     def _on_import_columns_changed(self) -> None:
@@ -328,25 +366,28 @@ class PointImportView(ImportViewInterface):
         point import requested
         :return: Nothing
         """
+        self.logger.debug("_on_start_import")
+        super()._on_start_import()
 
         if self.dockwidget.import_type.currentIndex() != ViewTabs.POINTS:
+            self.logger.debug("currentIndex != ViewTabs.POINTS [{}]", self.dockwidget.import_type.currentIndex())
             return
 
         data = self._import_service.read_import_file()
 
-        onekey = data[next(iter(data.keys()))]["values"]
-        # import json
-        # self.logger.info(json.dumps(onekey, indent=2))
-        count = len(onekey)
-
         selection = dict()
-        selection["east"] = self.combobox_data("easting")
-        selection["north"] = self.combobox_data("northing")
-        selection["alt"] = self.combobox_data("altitude")
+        selection["easting"] = self.combobox_data("easting")
+        selection["northing"] = self.combobox_data("northing")
+        selection["altitude"] = self.combobox_data("altitude")
         selection["strat"] = self.combobox_data("strat")
-        selection["age"] = self.combobox_data("strat_age")
+        selection["strat_age"] = self.combobox_data("strat_age")
         selection["set_name"] = self.combobox_data("set_name")
         selection["comment"] = self.combobox_data("comment")
+
+        self.logger.debug("starting import...")
+        self._controller_thread = PointImportController(data, selection, self.get_property_columns())
+        self._connect_thread()
+        self._controller_thread.start()
 
 
 class LineImportView(ImportViewInterface):
@@ -360,7 +401,9 @@ class LineImportView(ImportViewInterface):
         :param dwg: current GeologicalDataProcessingDockWidget instance
         """
         super().__init__(dwg)
-        self.logger = QGISLogHandler(LineImportView.__name__)
+        self.logger = QGISLogHandler(PointImportView.__name__)
+
+        self.list_widget = self._import_service.dockwidget.import_columns_lines
 
         # summarize import_tests Widgets
         # noinspection SpellCheckingInspection
@@ -374,12 +417,12 @@ class LineImportView(ImportViewInterface):
             "comment": self._import_service.dockwidget.comment_lines
         }
 
-    def get_property_columns(self):
+    def get_property_columns(self) -> List[str]:
         return [item.text() for item in self.dockwidget.import_columns_lines.selectedItems()]
 
     def _on_import_columns_changed(self) -> None:
         """
-        process the selected import_tests file and set possible values for column combo boxes
+        change the import columns
         :return: Nothing
         """
         self.logger.debug("_on_import_columns_changed")
@@ -403,6 +446,34 @@ class LineImportView(ImportViewInterface):
             self.reset_import()
 
         super()._on_import_columns_changed()
+
+    def _on_start_import(self) -> None:
+        """
+        point import requested
+        :return: Nothing
+        """
+        self.logger.debug("_on_start_import")
+        super()._on_start_import()
+
+        if self.dockwidget.import_type.currentIndex() != ViewTabs.LINES:
+            self.logger.debug("currentIndex != ViewTabs.LINES [{}]", self.dockwidget.import_type.currentIndex())
+            return
+
+        data = self._import_service.read_import_file()
+
+        selection = dict()
+        selection["easting"] = self.combobox_data("easting")
+        selection["northing"] = self.combobox_data("northing")
+        selection["altitude"] = self.combobox_data("altitude")
+        selection["strat"] = self.combobox_data("strat")
+        selection["strat_age"] = self.combobox_data("strat_age")
+        selection["set_name"] = self.combobox_data("set_name")
+        selection["comment"] = self.combobox_data("comment")
+
+        self.logger.debug("starting import...")
+        self._controller_thread = LineImportController(data, selection, self.get_property_columns())
+        self._connect_thread()
+        self._controller_thread.start()
 
 
 class WellImportView(ImportViewInterface):
@@ -459,3 +530,33 @@ class WellImportView(ImportViewInterface):
             self.reset_import()
 
         super()._on_import_columns_changed()
+
+    def _on_start_import(self) -> None:
+        """
+        point import requested
+        :return: Nothing
+        """
+        self.logger.debug("_on_start_import")
+        super()._on_start_import()
+
+        if self.dockwidget.import_type.currentIndex() != ViewTabs.WELLS:
+            self.logger.debug("currentIndex != ViewTabs.WELLS [{}]", self.dockwidget.import_type.currentIndex())
+            return
+
+        data = self._import_service.read_import_file()
+
+        selection = dict()
+        selection["name"] = self.combobox_data("name")
+        selection["short_name"] = self.combobox_data("short_name")
+        selection["easting"] = self.combobox_data("easting")
+        selection["northing"] = self.combobox_data("northing")
+        selection["altitude"] = self.combobox_data("altitude")
+        selection["total_depth"] = self.combobox_data("total_depth")
+        selection["strat"] = self.combobox_data("strat")
+        selection["depth_to"] = self.combobox_data("depth_to")
+        selection["comment"] = self.combobox_data("comment")
+
+        self.logger.debug("starting import...")
+        self._controller_thread = WellImportController(data, selection, [])
+        self._connect_thread()
+        self._controller_thread.start()

@@ -11,7 +11,7 @@ Can be edited individually in users config file ($HOME/.geological_data_processi
 
 module_list = {
     "packaging": "19.1",
-    "GeologicalToolbox": "0.3.0.b7",
+    "GeologicalToolbox": "0.3.0.b9",
     "keyring": "19.2.0"
 }
 """

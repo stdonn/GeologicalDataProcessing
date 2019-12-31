@@ -15,6 +15,7 @@ from PyQt5.QtWidgets import QFileDialog
 
 import GeologicalDataProcessing.config as config
 from GeologicalDataProcessing.geological_data_processing import GeologicalDataProcessingDockWidget
+from GeologicalDataProcessing.miscellaneous.config_handler import ConfigHandler
 from GeologicalDataProcessing.miscellaneous.exception_handler import ExceptionHandler
 from GeologicalDataProcessing.miscellaneous.qgis_log_handler import QGISLogHandler
 from GeologicalDataProcessing.miscellaneous.helper import get_file_name
@@ -54,8 +55,9 @@ class ImportService(QObject):
             if dwg is not None:
                 self.dockwidget = dwg
             ImportService.__instance = self
-            self.separator = ','
-            self.import_file = ''
+            self.separator = ","
+            self.import_file = ""
+            self.__config_handler = ConfigHandler()
 
     #
     # signals
@@ -423,17 +425,18 @@ class ImportService(QObject):
 
         self.logger.debug("_on_select_data_file")
 
-        path = ""
-        if config.debug:
+        path = self.__config_handler.get("General", "current working path")
+        # if config.debug:
             # get current module path
-            path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+            # path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
             # add relative path to test-data
-            path = os.path.join(path, "../../tests/test_data")
+            # path = os.path.join(path, "../../tests/test_data")
 
         # noinspection PyCallByClass,PyArgumentList
         filename = get_file_name(QFileDialog.getOpenFileName(self.dockwidget, "Select data file", path,
                                                              "Data Files(*.txt *.csv *.data);;Any File Type (*)"))
         if filename != "":
+            self.__config_handler.set("General", "current working path", os.path.dirname(filename))
             try:
                 import_file = open(filename, 'r')
             except IOError as e:
