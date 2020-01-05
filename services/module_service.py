@@ -3,9 +3,9 @@
 Check and, if necessary, install required modules
 """
 
-import importlib
 import json
 import os
+import platform
 import sys
 
 packages_found = "INSTALLED"
@@ -101,7 +101,10 @@ class ModuleService:
         """
         python = sys.executable
         if "PYTHONHOME" in os.environ.keys():
-            python = os.path.normpath(os.environ["PYTHONHOME"] + "/bin/python3")
+            if platform.system() == "Windows":
+                python = os.path.normpath(os.environ["PYTHONHOME"] + "/python.exe")
+            else:
+                python = os.path.normpath(os.environ["PYTHONHOME"] + "/bin/python3")
 
         return python
 
