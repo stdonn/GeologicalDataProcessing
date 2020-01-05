@@ -22,6 +22,6 @@ def get_file_name(obj: Tuple or str) -> str:
     raise ValueError("Cannot return file path. Element is empty or not an instance of tuple or string!")
 
 
-def diff(first: List, second: List) -> List:
+def diff(first: List[Tuple[str, str]], second: List[str]) -> List:
     second = set(second)
-    return [item for item in first if item not in second]
+    return [item for item in first if item[0] not in second]

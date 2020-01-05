@@ -7,6 +7,7 @@ ToDo: Add Property Type to Point and Line Import
 from concurrent.futures import Future
 
 from PyQt5.QtCore import pyqtSignal, QThread, QMutex
+from geological_toolbox.db_handler import AbstractDBObject
 from geological_toolbox.exceptions import WellMarkerDepthException
 from geological_toolbox.geometries import GeoPoint, Line
 from geological_toolbox.properties import Property, PropertyTypes
@@ -14,13 +15,11 @@ from geological_toolbox.stratigraphy import StratigraphicObject
 from geological_toolbox.wells import WellMarker, Well
 from typing import Dict, List
 
-from geological_toolbox.db_handler import AbstractDBObject
+from GeologicalDataProcessing.miscellaneous.exception_handler import ExceptionHandler
 from GeologicalDataProcessing.miscellaneous.qgis_log_handler import QGISLogHandler
+from GeologicalDataProcessing.models.log_model import LogPropertyImportData
 from GeologicalDataProcessing.services.database_service import DatabaseService
 from GeologicalDataProcessing.services.import_service import ImportService
-
-# miscellaneous
-from GeologicalDataProcessing.miscellaneous.exception_handler import ExceptionHandler
 
 
 class ImportControllersInterface(QThread):
@@ -28,7 +27,7 @@ class ImportControllersInterface(QThread):
     Basic interface for all import_tests controller
     """
 
-    def __init__(self, data: Dict, selection: Dict, property_cols: List[str]) -> None:
+    def __init__(self, data: Dict, selection: Dict, properties: List[LogPropertyImportData]) -> None:
         """
         :param data: import data parsed from the file to import
         :param selection: dictionary of selected columns
@@ -38,7 +37,7 @@ class ImportControllersInterface(QThread):
         self._logger = QGISLogHandler(ImportControllersInterface.__name__)
         self._data: Dict = data
         self._selection: Dict = selection
-        self._property_cols: List[str] = property_cols
+        self._properties: List[LogPropertyImportData] = properties
         self._mutex = QMutex()
         self._cancel = False
         self._message = ""
@@ -112,7 +111,7 @@ class PointImportController(ImportControllersInterface):
     controller for the point data import
     """
 
-    def __init__(self, data: Dict, selection: Dict, property_cols: List[str]) -> None:
+    def __init__(self, data: Dict, selection: Dict, property_cols: List[LogPropertyImportData]) -> None:
         """
         :param data: import data parsed from the file to import
         :param selection: dictionary of selected columns
@@ -195,15 +194,16 @@ class PointImportController(ImportControllersInterface):
                     self.logger.debug("new point")
 
                 # add / update properties
-                for item in self._property_cols:
+                for item in self._properties:
                     self.logger.debug("Property: {}".format(item))
-                    if point.has_property(item):
-                        p = point.get_property(item)
-                        p.property_unit = self._data[item]["property"]
-                        p.value = self._data[item]["values"][i]
+                    if point.has_property(item.name):
+                        p = point.get_property(item.name)
+                        p.property_unit = item.unit
+                        p.value = self._data[item.name]["values"][i]
+                        p.property_type = item.property_type
                     else:
-                        p = Property(value=self._data[item]["values"][i], property_name=item,
-                                     _type=PropertyTypes.STRING, property_unit=self._data[item]["property"],
+                        p = Property(value=self._data[item.name]["values"][i], property_name=item.name,
+                                     _type=item.property_type, property_unit=item.unit,
                                      session=session)
                         point.add_property(p)
 
@@ -237,7 +237,7 @@ class LineImportController(ImportControllersInterface):
     controller for the line data import
     """
 
-    def __init__(self, data: Dict, selection: Dict, property_cols: List[str]) -> None:
+    def __init__(self, data: Dict, selection: Dict, property_cols: List[LogPropertyImportData]) -> None:
         """
         :param data: import data parsed from the file to import
         :param selection: dictionary of selected columns
@@ -308,17 +308,18 @@ class LineImportController(ImportControllersInterface):
                                  e, n, 0 if (h is None) else h, session, sn, c)
 
                 # add / update properties
-                for item in self._property_cols:
-                    if point.has_property(item):
-                        p = point.get_property(item)
-                        p.property_unit = self._data[item]["property"]
-                        p.value = self._data[item]["values"][i]
+                for item in self._properties:
+                    self.logger.debug("Property: {}".format(item))
+                    if point.has_property(item.name):
+                        p = point.get_property(item.name)
+                        p.property_unit = item.unit
+                        p.value = self._data[item.name]["values"][i]
+                        p.property_type = item.property_type
                     else:
-                        p = Property(value=self._data[item]["values"][i], property_name=item,
-                                     _type=PropertyTypes.STRING, property_unit=self._data[item]["property"],
+                        p = Property(value=self._data[item.name]["values"][i], property_name=item.name,
+                                     _type=item.property_type, property_unit=item.unit,
                                      session=session)
                         point.add_property(p)
-                    self.logger.debug("Property: {}".format(item))
 
                 if _id is not None:
                     point.line_id = _id
@@ -408,7 +409,7 @@ class WellImportController(ImportControllersInterface):
     controller for well data import
     """
 
-    def __init__(self, data: Dict, selection: Dict, property_cols: List[str]) -> None:
+    def __init__(self, data: Dict, selection: Dict, property_cols: List[LogPropertyImportData]) -> None:
         """
         :param data: import data parsed from the file to import
         :param selection: dictionary of selected columns
@@ -540,6 +541,105 @@ class WellImportController(ImportControllersInterface):
             if not self._cancel:
                 self.update_progress.emit(100)
                 self.logger.debug("Lines successfully imported")
+                self.import_finished.emit()
+
+        except Exception as e:
+            msg = str(ExceptionHandler(e))
+            self.import_failed.emit(msg)
+            self.logger.error("Error", msg)
+
+        finally:
+            service.close_session()
+
+        self._mutex.unlock()
+        self.quit()
+
+
+class PropertyImportController(ImportControllersInterface):
+    """
+    controller for the additional property import
+    """
+
+    def __init__(self, data: Dict, selection: Dict, property_cols: List[LogPropertyImportData]) -> None:
+        """
+        :param data: import data parsed from the file to import
+        :param selection: dictionary of selected columns
+        """
+        super().__init__(data, selection, property_cols)
+        self.logger = QGISLogHandler(PropertyImportController.__name__)
+
+    def run(self):
+        """
+        Save the Point Object(s) to the database
+        :return: True if function executed successfully, else False
+        """
+
+        self._mutex.lock()
+        service = DatabaseService.get_instance()
+        service.close_session()
+        service.connect()
+        session = service.get_session()
+
+        try:
+            onekey = self._data[next(iter(self._data.keys()))]["values"]
+            # import json
+            # self.logger.info(json.dumps(onekey, indent=2))
+            count = len(onekey)
+
+            id_col = self._selection["id"]
+
+            reference = ImportService.get_instance().get_crs()
+            if reference is None:
+                reference = ""
+            else:
+                reference = reference.toWkt()
+
+            self.logger.debug("Saving with reference system\n{}".format(reference))
+
+            for i in range(count):
+                self.update_progress.emit(100 * i / count)
+
+                try:
+                    _id = int(self._data[id_col]["values"][i])
+                except ValueError:
+                    self.logger.warn("No id specified for current data set at line {}".format(i), only_logfile=True)
+                    continue
+
+                if (_id is None) or (_id < 0):
+                    self.logger.debug("Unknown Geopoint ID found: [{}]".format(_id))
+                    continue
+
+                point = GeoPoint.load_by_id_from_db(_id, session)
+                if point is None:
+                    self.logger.warn("Cannot find Geopoint with ID [{}]. Skipping property import".format(_id))
+
+                point.reference_system = reference
+
+                # add / update properties
+                for item in self._properties:
+                    self.logger.debug("Property: {}".format(item))
+                    if point.has_property(item.name):
+                        p = point.get_property(item.name)
+                        p.property_unit = item.unit
+                        p.value = self._data[item.name]["values"][i]
+                        p.property_type = item.property_type
+                    else:
+                        p = Property(value=self._data[item.name]["values"][i], property_name=item.name,
+                                     _type=item.property_type, property_unit=item.unit,
+                                     session=session)
+                        point.add_property(p)
+
+                self.logger.debug("point: {}".format(point))
+                point.save_to_db()
+
+                if self._cancel:
+                    self.logger.debug("Import canceled")
+                    self.import_failed.emit(self._message)
+                    break
+
+            if not self._cancel:
+                self.update_progress.emit(100)
+                self.logger.debug("Points successfully imported")
                 self.import_finished.emit()
 
         except Exception as e:

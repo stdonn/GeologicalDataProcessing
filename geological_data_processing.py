@@ -290,11 +290,9 @@ class GeologicalDataProcessing:
                 self.dockwidget.show()
 
                 from GeologicalDataProcessing.controller.database_controller import DatabaseController
-                from GeologicalDataProcessing.controller.import_controller import LineImportController
-                from GeologicalDataProcessing.controller.import_controller import PointImportController
-                from GeologicalDataProcessing.controller.import_controller import WellImportController
                 from GeologicalDataProcessing.services.import_service import ImportService
-                from GeologicalDataProcessing.views.import_views import LineImportView, PointImportView, WellImportView
+                from GeologicalDataProcessing.views.import_views import LineImportView, PointImportView, \
+                    WellImportView, PropertyImportView
 
                 ImportService.get_instance(self.dockwidget)
 
@@ -311,12 +309,10 @@ class GeologicalDataProcessing:
 
                 self.dockwidget.progress_bar_layout.setVisible(False)
 
-                self.__views['import_points'] = PointImportView(self.dockwidget)
-                self.__views['import_lines'] = LineImportView(self.dockwidget)
-                self.__views['import_wells'] = WellImportView(self.dockwidget)
-                # self.__controllers['import_points'] = PointImportController(self.__views['import_points'])
-                # self.__controllers['import_lines'] = LineImportController(self.__views['import_lines'])
-                # self.__controllers['import_wells'] = WellImportController(self.__views['import_wells'])
+                self.__views["import_points"] = PointImportView(self.dockwidget)
+                self.__views["import_lines"] = LineImportView(self.dockwidget)
+                self.__views["import_wells"] = WellImportView(self.dockwidget)
+                self.__views["import_properties"] = PropertyImportView(self.dockwidget)
 
                 self.__db_controller = DatabaseController(self.settings_dialog)
 

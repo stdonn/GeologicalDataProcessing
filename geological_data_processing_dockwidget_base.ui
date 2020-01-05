@@ -247,40 +247,6 @@
                 </property>
                </widget>
               </item>
-              <item row="9" column="0" colspan="2">
-               <widget class="QListWidget" name="import_columns_points">
-                <property name="enabled">
-                 <bool>true</bool>
-                </property>
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="minimumSize">
-                 <size>
-                  <width>0</width>
-                  <height>60</height>
-                 </size>
-                </property>
-                <property name="selectionMode">
-                 <enum>QAbstractItemView::MultiSelection</enum>
-                </property>
-                <property name="isWrapping" stdset="0">
-                 <bool>false</bool>
-                </property>
-                <property name="resizeMode">
-                 <enum>QListView::Adjust</enum>
-                </property>
-                <property name="viewMode">
-                 <enum>QListView::ListMode</enum>
-                </property>
-                <property name="sortingEnabled">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
               <item row="1" column="1">
                <widget class="QComboBox" name="easting_points">
                 <property name="sizePolicy">
@@ -589,6 +555,34 @@
                 </property>
                </widget>
               </item>
+              <item row="9" column="0" colspan="2">
+               <widget class="QTableView" name="import_columns_points">
+                <property name="enabled">
+                 <bool>true</bool>
+                </property>
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>60</height>
+                 </size>
+                </property>
+                <property name="lineWidth">
+                 <number>1</number>
+                </property>
+                <property name="selectionMode">
+                 <enum>QAbstractItemView::MultiSelection</enum>
+                </property>
+                <property name="selectionBehavior">
+                 <enum>QAbstractItemView::SelectRows</enum>
+                </property>
+               </widget>
+              </item>
              </layout>
             </item>
            </layout>
@@ -675,16 +669,6 @@
                 </property>
                 <property name="text">
                  <string>line set name</string>
-                </property>
-               </widget>
-              </item>
-              <item row="9" column="0" colspan="2">
-               <widget class="QListWidget" name="import_columns_lines">
-                <property name="tabKeyNavigation">
-                 <bool>true</bool>
-                </property>
-                <property name="selectionMode">
-                 <enum>QAbstractItemView::MultiSelection</enum>
                 </property>
                </widget>
               </item>
@@ -953,6 +937,19 @@
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignBottom|Qt::AlignLeading|Qt::AlignLeft</set>
+                </property>
+               </widget>
+              </item>
+              <item row="9" column="0" colspan="2">
+               <widget class="QTableView" name="import_columns_lines">
+                <property name="tabKeyNavigation">
+                 <bool>true</bool>
+                </property>
+                <property name="selectionMode">
+                 <enum>QAbstractItemView::MultiSelection</enum>
+                </property>
+                <property name="selectionBehavior">
+                 <enum>QAbstractItemView::SelectRows</enum>
                 </property>
                </widget>
               </item>
@@ -1419,59 +1416,15 @@
               <property name="bottomMargin">
                <number>12</number>
               </property>
-              <item row="3" column="0">
-               <widget class="QLabel" name="label_13">
-                <property name="text">
-                 <string>easting</string>
-                </property>
-               </widget>
-              </item>
-              <item row="5" column="1">
-               <widget class="QListWidget" name="values_props">
+              <item row="3" column="0" colspan="2">
+               <widget class="QTableView" name="values_props">
                 <property name="selectionMode">
                  <enum>QAbstractItemView::MultiSelection</enum>
                 </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
-               <widget class="QComboBox" name="geometry_props"/>
-              </item>
-              <item row="2" column="0">
-               <widget class="QLabel" name="label_38">
-                <property name="text">
-                 <string>set name</string>
+                <property name="selectionBehavior">
+                 <enum>QAbstractItemView::SelectRows</enum>
                 </property>
                </widget>
-              </item>
-              <item row="1" column="0">
-               <widget class="QLabel" name="label_37">
-                <property name="text">
-                 <string>geometry type</string>
-                </property>
-               </widget>
-              </item>
-              <item row="4" column="0">
-               <widget class="QLabel" name="label_33">
-                <property name="text">
-                 <string>northing</string>
-                </property>
-               </widget>
-              </item>
-              <item row="5" column="0">
-               <widget class="QLabel" name="label_36">
-                <property name="text">
-                 <string>property values</string>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="1">
-               <widget class="QComboBox" name="setname_props"/>
-              </item>
-              <item row="4" column="1">
-               <widget class="QComboBox" name="northing_props"/>
-              </item>
-              <item row="3" column="1">
-               <widget class="QComboBox" name="easting_props"/>
               </item>
               <item row="0" column="0" colspan="2">
                <layout class="QHBoxLayout" name="horizontalLayout_8">
@@ -1515,7 +1468,7 @@
                    </size>
                   </property>
                   <property name="text">
-                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:14pt; font-weight:600;&quot;&gt;Import Properties&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:14pt; font-weight:600;&quot;&gt;Import Addional Properties&lt;/span&gt;&lt;br/&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;(for point and line geometries)&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                   </property>
                   <property name="textFormat">
                    <enum>Qt::RichText</enum>
@@ -1529,6 +1482,23 @@
                  </widget>
                 </item>
                </layout>
+              </item>
+              <item row="1" column="1">
+               <widget class="QComboBox" name="id_props"/>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="label_13">
+                <property name="text">
+                 <string>id</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="0" colspan="2">
+               <widget class="QLabel" name="label_36">
+                <property name="text">
+                 <string>property values</string>
+                </property>
+               </widget>
               </item>
              </layout>
             </item>
@@ -1569,6 +1539,23 @@
               <property name="bottomMargin">
                <number>12</number>
               </property>
+              <item row="2" column="1">
+               <widget class="QComboBox" name="depth_logs"/>
+              </item>
+              <item row="2" column="0">
+               <widget class="QLabel" name="label_41">
+                <property name="text">
+                 <string>depth to</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="label_39">
+                <property name="text">
+                 <string>well name</string>
+                </property>
+               </widget>
+              </item>
               <item row="0" column="0" colspan="2">
                <layout class="QHBoxLayout" name="horizontalLayout_9">
                 <item>
@@ -1626,37 +1613,23 @@
                 </item>
                </layout>
               </item>
-              <item row="2" column="0">
-               <widget class="QLabel" name="label_41">
-                <property name="text">
-                 <string>depth column</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="0">
-               <widget class="QLabel" name="label_39">
-                <property name="text">
-                 <string>well name</string>
-                </property>
-               </widget>
-              </item>
               <item row="1" column="1">
                <widget class="QComboBox" name="well_name_logs"/>
               </item>
-              <item row="2" column="1">
-               <widget class="QComboBox" name="depth_logs"/>
-              </item>
-              <item row="3" column="1">
-               <widget class="QListWidget" name="values_logs">
-                <property name="selectionMode">
-                 <enum>QAbstractItemView::MultiSelection</enum>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="0">
+              <item row="3" column="0" colspan="2">
                <widget class="QLabel" name="label_40">
                 <property name="text">
                  <string>log values</string>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="0" colspan="2">
+               <widget class="QTableView" name="values_logs">
+                <property name="selectionMode">
+                 <enum>QAbstractItemView::MultiSelection</enum>
+                </property>
+                <property name="selectionBehavior">
+                 <enum>QAbstractItemView::SelectRows</enum>
                 </property>
                </widget>
               </item>
@@ -1815,10 +1788,7 @@
   <tabstop>strat_wells</tabstop>
   <tabstop>depth_to_wells</tabstop>
   <tabstop>comment_wells</tabstop>
-  <tabstop>geometry_props</tabstop>
-  <tabstop>setname_props</tabstop>
-  <tabstop>easting_props</tabstop>
-  <tabstop>northing_props</tabstop>
+  <tabstop>id_props</tabstop>
   <tabstop>values_props</tabstop>
   <tabstop>well_name_logs</tabstop>
   <tabstop>depth_logs</tabstop>

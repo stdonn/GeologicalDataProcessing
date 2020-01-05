@@ -6,17 +6,20 @@ This module defines views for import processing
 from enum import IntEnum, unique
 from typing import Dict, List
 from PyQt5.QtCore import pyqtSignal, QObject, QThread
-from PyQt5.QtWidgets import QComboBox, QListWidget
+from PyQt5.QtWidgets import QComboBox, QTableView, QHeaderView
 
 from GeologicalDataProcessing.controller.import_controller import PointImportController, LineImportController, \
-    WellImportController
+    WellImportController, PropertyImportController
 from GeologicalDataProcessing.geological_data_processing_dockwidget import GeologicalDataProcessingDockWidget
-from GeologicalDataProcessing.miscellaneous.qgis_log_handler import QGISLogHandler
+from GeologicalDataProcessing.models.log_model import LogPropertyImportModel, LogPropertyImportDelegate, \
+    LogPropertyImportData
 from GeologicalDataProcessing.services.import_service import ImportService
 
 # miscellaneous
+from GeologicalDataProcessing.miscellaneous.qgis_log_handler import QGISLogHandler
 from GeologicalDataProcessing.miscellaneous.helper import diff
 from GeologicalDataProcessing.miscellaneous.exception_handler import ExceptionHandler
+from geological_toolbox.properties import PropertyTypes
 
 
 @unique
@@ -48,7 +51,8 @@ class ImportViewInterface(QObject):
         self._import_service.reset_import.connect(self.reset_import)
         self._import_service.import_columns_changed.connect(self._on_import_columns_changed)
 
-        self._list_widget: QListWidget or None = None
+        self._table_view: QTableView or None = None
+        self._table_model: LogPropertyImportModel = LogPropertyImportModel()
         self._dwg.start_import_button.clicked.connect(self._on_start_import)
         self._controller_thread: QThread or None = None
 
@@ -94,15 +98,22 @@ class ImportViewInterface(QObject):
         self._connect_selection_changed()
 
     @property
-    def list_widget(self) -> QListWidget or None:
-        return self._list_widget
+    def table_view(self) -> QTableView or None:
+        return self._table_view
 
-    @list_widget.setter
-    def list_widget(self, widget: QListWidget) -> None:
-        if not isinstance(widget, QListWidget):
-            raise TypeError("submitted object is not of type QListWidget: {}", str(widget))
+    @table_view.setter
+    def table_view(self, widget: QTableView) -> None:
+        if not isinstance(widget, QTableView):
+            raise TypeError("submitted object is not of type QTableView: {}", str(widget))
 
-        self._list_widget = widget
+        self._table_model.clear()
+        self._table_view = widget
+        self._table_view.setModel(self._table_model)
+
+        self._table_view.setItemDelegate(LogPropertyImportDelegate())
+        # self._table_view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        # self._table_view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        self._table_view.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
     @property
     def dockwidget(self) -> GeologicalDataProcessingDockWidget:
@@ -134,8 +145,8 @@ class ImportViewInterface(QObject):
         selection_list = [self.combobox_names[key].currentText() for key in self.combobox_names]
         self.selection_changed.emit(selection_list)
 
-        if self._list_widget is None:
-            # self.logger.debug("No list widget specified for additional columns")
+        if self._table_view is None:
+            self.logger.debug("No list widget specified for additional columns")
             return
 
         cols = diff(self._import_service.selectable_columns, selection_list)
@@ -144,11 +155,15 @@ class ImportViewInterface(QObject):
         self.logger.debug("selected_cols: " + str(selection_list))
         self.logger.debug("additional cols: " + str(cols))
 
-        if self._list_widget is not None:
-            self._list_widget.show()
-            self._list_widget.setEnabled(True)
-            self._list_widget.clear()
-            self._list_widget.addItems(cols)
+        if self._table_view is not None:
+            self._table_view.show()
+            self._table_view.setEnabled(True)
+            self._table_view.clearSelection()
+
+        self._table_model.clear()
+        for col in cols:
+            property_type = PropertyTypes.FLOAT if col in self._import_service.number_columns else PropertyTypes.STRING
+            self._table_model.add(LogPropertyImportData(name=col[0], unit=col[1], property_type=property_type))
 
     def _on_import_columns_changed(self) -> None:
         """
@@ -263,6 +278,14 @@ class ImportViewInterface(QObject):
         """
         [self.set_combobox_data(name, []) for name in self.get_names()]
 
+    def get_property_columns(self) -> List[LogPropertyImportData]:
+        selection = set([x.row() for x in self._table_view.selectedIndexes()])
+        self.logger.debug("selected rows indices: {}".format(selection))
+        erg = [self._table_model.row(x) for x in selection]
+        self.logger.debug("Selection:")
+        [self.logger.debug("\t{}".format(x)) for x in erg]
+        return erg
+
     #
     # protected functions
     #
@@ -282,6 +305,7 @@ class ImportViewInterface(QObject):
             self.dockwidget.progress_bar.setValue(int(value))
 
     def _connect_selection_changed(self):
+        self.logger.debug("_connect_selection_changed")
         [self.__combos[key].currentTextChanged.connect(self.on_selection_changed) for key in self.__combos]
 
     def _disconnect_selection_changed(self):
@@ -318,22 +342,19 @@ class PointImportView(ImportViewInterface):
         super().__init__(dwg)
         self.logger = QGISLogHandler(PointImportView.__name__)
 
-        self.list_widget = self._import_service.dockwidget.import_columns_points
+        self.table_view = self._dwg.import_columns_points
 
         # summarize import_tests Widgets
         # noinspection SpellCheckingInspection
         self.combobox_names = {
-            "easting": self._import_service.dockwidget.easting_points,
-            "northing": self._import_service.dockwidget.northing_points,
-            "altitude": self._import_service.dockwidget.altitude_points,
-            "strat": self._import_service.dockwidget.strat_points,
-            "strat_age": self._import_service.dockwidget.strat_age_points,
-            "set_name": self._import_service.dockwidget.set_name_points,
-            "comment": self._import_service.dockwidget.comment_points
+            "easting": self._dwg.easting_points,
+            "northing": self._dwg.northing_points,
+            "altitude": self._dwg.altitude_points,
+            "strat": self._dwg.strat_points,
+            "strat_age": self._dwg.strat_age_points,
+            "set_name": self._dwg.set_name_points,
+            "comment": self._dwg.comment_points
         }
-
-    def get_property_columns(self) -> List[str]:
-        return [item.text() for item in self.dockwidget.import_columns_points.selectedItems()]
 
     def _on_import_columns_changed(self) -> None:
         """
@@ -345,16 +366,16 @@ class PointImportView(ImportViewInterface):
         self._disconnect_selection_changed()
 
         try:
-            self.set_combobox_data("easting", self._import_service.number_columns, 0)
+            self.set_combobox_data("easting", [x[0] for x in self._import_service.number_columns], 0)
             # noinspection SpellCheckingInspection
-            self.set_combobox_data("northing", self._import_service.number_columns, 1)
-            self.set_combobox_data("altitude", [''] + self._import_service.number_columns, 3)
+            self.set_combobox_data("northing", [x[0] for x in self._import_service.number_columns], 1)
+            self.set_combobox_data("altitude", [''] + [x[0] for x in self._import_service.number_columns], 3)
             # noinspection SpellCheckingInspection
-            self.set_combobox_data("strat", [''] + self._import_service.selectable_columns, 0)
+            self.set_combobox_data("strat", [''] + [x[0] for x in self._import_service.selectable_columns], 0)
             # noinspection SpellCheckingInspection
-            self.set_combobox_data("strat_age", [''] + self._import_service.number_columns, 0)
-            self.set_combobox_data("set_name", [''] + self._import_service.selectable_columns, 0)
-            self.set_combobox_data("comment", [''] + self._import_service.selectable_columns, 0)
+            self.set_combobox_data("strat_age", [''] + [x[0] for x in self._import_service.number_columns], 0)
+            self.set_combobox_data("set_name", [''] + [x[0] for x in self._import_service.selectable_columns], 0)
+            self.set_combobox_data("comment", [''] + [x[0] for x in self._import_service.selectable_columns], 0)
         except Exception as e:
             self.logger.error("Error", str(ExceptionHandler(e)))
             self._import_service.reset()
@@ -401,24 +422,21 @@ class LineImportView(ImportViewInterface):
         :param dwg: current GeologicalDataProcessingDockWidget instance
         """
         super().__init__(dwg)
-        self.logger = QGISLogHandler(PointImportView.__name__)
+        self.logger = QGISLogHandler(LineImportView.__name__)
 
-        self.list_widget = self._import_service.dockwidget.import_columns_lines
+        self.table_view = self._dwg.import_columns_lines
 
         # summarize import_tests Widgets
         # noinspection SpellCheckingInspection
         self.combobox_names = {
-            "easting": self._import_service.dockwidget.easting_lines,
-            "northing": self._import_service.dockwidget.northing_lines,
-            "altitude": self._import_service.dockwidget.altitude_lines,
-            "strat": self._import_service.dockwidget.strat_lines,
-            "strat_age": self._import_service.dockwidget.strat_age_lines,
-            "set_name": self._import_service.dockwidget.set_name_lines,
-            "comment": self._import_service.dockwidget.comment_lines
+            "easting": self._dwg.easting_lines,
+            "northing": self._dwg.northing_lines,
+            "altitude": self._dwg.altitude_lines,
+            "strat": self._dwg.strat_lines,
+            "strat_age": self._dwg.strat_age_lines,
+            "set_name": self._dwg.set_name_lines,
+            "comment": self._dwg.comment_lines
         }
-
-    def get_property_columns(self) -> List[str]:
-        return [item.text() for item in self.dockwidget.import_columns_lines.selectedItems()]
 
     def _on_import_columns_changed(self) -> None:
         """
@@ -430,16 +448,16 @@ class LineImportView(ImportViewInterface):
         self._disconnect_selection_changed()
 
         try:
-            self.set_combobox_data("easting", self._import_service.number_columns, 0)
+            self.set_combobox_data("easting", [x[0] for x in self._import_service.number_columns], 0)
             # noinspection SpellCheckingInspection
-            self.set_combobox_data("northing", self._import_service.number_columns, 1)
-            self.set_combobox_data("altitude", [''] + self._import_service.number_columns, 3)
+            self.set_combobox_data("northing", [x[0] for x in self._import_service.number_columns], 1)
+            self.set_combobox_data("altitude", [''] + [x[0] for x in self._import_service.number_columns], 3)
             # noinspection SpellCheckingInspection
-            self.set_combobox_data("strat", [''] + self._import_service.selectable_columns, 0)
+            self.set_combobox_data("strat", [''] + [x[0] for x in self._import_service.selectable_columns], 0)
             # noinspection SpellCheckingInspection
-            self.set_combobox_data("strat_age", [''] + self._import_service.number_columns, 0)
-            self.set_combobox_data("set_name", [''] + self._import_service.selectable_columns, 0)
-            self.set_combobox_data("comment", [''] + self._import_service.selectable_columns, 0)
+            self.set_combobox_data("strat_age", [''] + [x[0] for x in self._import_service.number_columns], 0)
+            self.set_combobox_data("set_name", [''] + [x[0] for x in self._import_service.selectable_columns], 0)
+            self.set_combobox_data("comment", [''] + [x[0] for x in self._import_service.selectable_columns], 0)
 
         except Exception as e:
             self.logger.error("Error", str(ExceptionHandler(e)))
@@ -492,15 +510,15 @@ class WellImportView(ImportViewInterface):
         # summarize import_tests Widgets
         # noinspection SpellCheckingInspection
         self.combobox_names = {
-            "name": self._import_service.dockwidget.name_wells,
-            "short_name": self._import_service.dockwidget.short_name_wells,
-            "easting": self._import_service.dockwidget.easting_wells,
-            "northing": self._import_service.dockwidget.northing_wells,
-            "altitude": self._import_service.dockwidget.altitude_wells,
-            "total_depth": self._import_service.dockwidget.total_depth_wells,
-            "strat": self._import_service.dockwidget.strat_wells,
-            "depth_to": self._import_service.dockwidget.depth_to_wells,
-            "comment": self._import_service.dockwidget.comment_wells
+            "name": self._dwg.name_wells,
+            "short_name": self._dwg.short_name_wells,
+            "easting": self._dwg.easting_wells,
+            "northing": self._dwg.northing_wells,
+            "altitude": self._dwg.altitude_wells,
+            "total_depth": self._dwg.total_depth_wells,
+            "strat": self._dwg.strat_wells,
+            "depth_to": self._dwg.depth_to_wells,
+            "comment": self._dwg.comment_wells
         }
 
     def _on_import_columns_changed(self) -> None:
@@ -513,18 +531,18 @@ class WellImportView(ImportViewInterface):
         self._disconnect_selection_changed()
 
         try:
-            self.set_combobox_data("name", self._import_service.selectable_columns, 1)
-            self.set_combobox_data("short_name", [''] + self._import_service.selectable_columns, 0)
-            self.set_combobox_data("easting", self._import_service.number_columns, 0)
+            self.set_combobox_data("name", [x[0] for x in self._import_service.selectable_columns], 1)
+            self.set_combobox_data("short_name", [''] + [x[0] for x in self._import_service.selectable_columns], 0)
+            self.set_combobox_data("easting", [x[0] for x in self._import_service.number_columns], 0)
             # noinspection SpellCheckingInspection
-            self.set_combobox_data("northing", self._import_service.number_columns, 1)
-            self.set_combobox_data("altitude", self._import_service.number_columns, 2)
-            self.set_combobox_data("total_depth", self._import_service.number_columns, 3)
+            self.set_combobox_data("northing", [x[0] for x in self._import_service.number_columns], 1)
+            self.set_combobox_data("altitude", [x[0] for x in self._import_service.number_columns], 2)
+            self.set_combobox_data("total_depth", [x[0] for x in self._import_service.number_columns], 3)
             # noinspection SpellCheckingInspection
-            self.set_combobox_data("strat", [''] + self._import_service.selectable_columns, 0)
+            self.set_combobox_data("strat", [''] + [x[0] for x in self._import_service.selectable_columns], 0)
             # noinspection SpellCheckingInspection
-            self.set_combobox_data("depth_to", [''] + self._import_service.selectable_columns, 0)
-            self.set_combobox_data("comment", [''] + self._import_service.selectable_columns, 0)
+            self.set_combobox_data("depth_to", [''] + [x[0] for x in self._import_service.selectable_columns], 0)
+            self.set_combobox_data("comment", [''] + [x[0] for x in self._import_service.selectable_columns], 0)
         except Exception as e:
             self.logger.error("Error", str(ExceptionHandler(e)))
             self.reset_import()
@@ -558,5 +576,71 @@ class WellImportView(ImportViewInterface):
 
         self.logger.debug("starting import...")
         self._controller_thread = WellImportController(data, selection, [])
+        self._connect_thread()
+        self._controller_thread.start()
+
+
+class PropertyImportView(ImportViewInterface):
+    """
+    viewer class for the property import procedure
+    """
+
+    def __init__(self, dwg: GeologicalDataProcessingDockWidget) -> None:
+        """
+        Initialize the view
+        :param dwg: current GeologicalDataProcessingDockWidget instance
+        """
+        super().__init__(dwg)
+        self.logger = QGISLogHandler(PropertyImportView.__name__)
+
+        self.table_view = self._dwg.values_props
+
+        # summarize import_tests Widgets
+        # noinspection SpellCheckingInspection
+        self.combobox_names = {
+            "id": self._dwg.id_props
+        }
+
+    def _on_import_columns_changed(self) -> None:
+        """
+        change the import columns
+        :return: Nothing
+        """
+        self.logger.debug("_on_import_columns_changed")
+
+        self._disconnect_selection_changed()
+
+        try:
+            selection = 0
+            for i in range(len(self._import_service.number_columns)):
+                if "id" in self._import_service.number_columns[i][0].lower():
+                    selection = i
+                    break
+            self.set_combobox_data("id", [x[0] for x in self._import_service.number_columns], selection)
+        except Exception as e:
+            self.logger.error("Error", str(ExceptionHandler(e)))
+            self._import_service.reset()
+
+        super()._on_import_columns_changed()
+
+    def _on_start_import(self) -> None:
+        """
+        point import requested
+        :return: Nothing
+        """
+        self.logger.debug("_on_start_import")
+        super()._on_start_import()
+
+        if self.dockwidget.import_type.currentIndex() != ViewTabs.PROPERTIES:
+            self.logger.debug("currentIndex != ViewTabs.PROPERTIES [{}]", self.dockwidget.import_type.currentIndex())
+            return
+
+        data = self._import_service.read_import_file()
+
+        selection = dict()
+        selection["id"] = self.combobox_data("id")
+
+        self.logger.debug("starting import...")
+        self._controller_thread = PropertyImportController(data, selection, self.get_property_columns())
         self._connect_thread()
         self._controller_thread.start()

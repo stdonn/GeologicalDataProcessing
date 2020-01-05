@@ -6,14 +6,13 @@ module to provide the import service
 import inspect
 import os
 
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from qgis.core import QgsCoordinateReferenceSystem
 
 from PyQt5.QtCore import pyqtSignal, QObject
 from PyQt5.QtWidgets import QFileDialog
 
-import GeologicalDataProcessing.config as config
 from GeologicalDataProcessing.geological_data_processing import GeologicalDataProcessingDockWidget
 from GeologicalDataProcessing.miscellaneous.config_handler import ConfigHandler
 from GeologicalDataProcessing.miscellaneous.exception_handler import ExceptionHandler
@@ -27,8 +26,8 @@ class ImportService(QObject):
     """
     __instance = None
     __dwg = None
-    __selectable_columns: List[str] = []
-    __number_columns: List[str] = []
+    __selectable_columns: List[Tuple[str, str]] = list()
+    __number_columns: List[Tuple[str, str]] = list()
 
     logger = QGISLogHandler("ImportService")
 
@@ -207,7 +206,7 @@ class ImportService(QObject):
         self.dockwidget.reference.setCrs(_crs)
 
     @property
-    def selectable_columns(self) -> List[str]:
+    def selectable_columns(self) -> List[Tuple[str, str]]:
         """
         Returns a list of selectable columns
         :return: Returns a list of selectable columns
@@ -215,7 +214,7 @@ class ImportService(QObject):
         return ImportService.__selectable_columns
 
     @property
-    def number_columns(self) -> List[str]:
+    def number_columns(self) -> List[Tuple[str, str]]:
         """
         Returns a list of number columns
         :return: Returns a list of number columns
@@ -249,8 +248,8 @@ class ImportService(QObject):
 
         self.logger.debug("reset")
 
-        ImportService.__selectable_columns = []
-        ImportService.__number_columns = []
+        ImportService.__selectable_columns = list()
+        ImportService.__number_columns = list()
         self.dockwidget.start_import_button.setEnabled(False)
         self.import_file_changed.emit("")
         self.reset_import.emit()
@@ -362,11 +361,11 @@ class ImportService(QObject):
                                   .format("<tabulator>" if separator == '\t' else separator))
 
             cols = cols.split(separator)
-            props = import_file.readline().strip().split(separator)
+            units = import_file.readline().strip().split(separator)
             data = import_file.readline().strip().split(separator)
 
             self.logger.debug("cols:\t{}".format(cols))
-            self.logger.debug("props:\t{}".format(props))
+            self.logger.debug("units:\t{}".format(units))
             self.logger.debug("data:\t{}".format(data))
 
             import_file.close()
@@ -386,8 +385,24 @@ class ImportService(QObject):
                 self.reset()
                 return
 
-            ImportService.__number_columns = [cols[x] for x in nr_cols]
-            ImportService.__selectable_columns = cols
+            ImportService.__selectable_columns = list()
+            for i in range(len(cols)):
+                name = cols[i]
+                try:
+                    unit = units[i]
+                except IndexError:
+                    unit = ""
+                ImportService.__selectable_columns.append((name, unit))
+
+            ImportService.__number_columns = list()
+            for i in nr_cols:
+                name = cols[i]
+                try:
+                    unit = units[i]
+                except IndexError:
+                    unit = ""
+                ImportService.__number_columns.append((name, unit))
+
             self.dockwidget.start_import_button.setEnabled(True)
             self.import_file_changed.emit(filename)
             self.import_columns_changed.emit()
@@ -427,10 +442,10 @@ class ImportService(QObject):
 
         path = self.__config_handler.get("General", "current working path")
         # if config.debug:
-            # get current module path
-            # path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-            # add relative path to test-data
-            # path = os.path.join(path, "../../tests/test_data")
+        # get current module path
+        # path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+        # add relative path to test-data
+        # path = os.path.join(path, "../../tests/test_data")
 
         # noinspection PyCallByClass,PyArgumentList
         filename = get_file_name(QFileDialog.getOpenFileName(self.dockwidget, "Select data file", path,
