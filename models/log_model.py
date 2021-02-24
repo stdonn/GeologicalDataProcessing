@@ -1,14 +1,13 @@
 from typing import List
 
+from GeologicalDataProcessing.miscellaneous.qgis_log_handler import QGISLogHandler
 from PyQt5.QtCore import QAbstractTableModel, Qt, QModelIndex, QVariant, QSize, QRectF
 from PyQt5.QtGui import QPainter
-from PyQt5.QtWidgets import QWidget, QStyledItemDelegate, QLabel, QStyleOptionViewItem, QComboBox
+from PyQt5.QtWidgets import QWidget, QStyledItemDelegate, QStyleOptionViewItem, QComboBox
 from geological_toolbox.properties import PropertyTypes
 
-from GeologicalDataProcessing.miscellaneous.qgis_log_handler import QGISLogHandler
 
-
-class LogPropertyImportData:
+class PropertyImportData:
     __name = ""
     __property_type = PropertyTypes.STRING
     __unit = ""
@@ -19,7 +18,7 @@ class LogPropertyImportData:
         self.unit = unit
 
     def __repr__(self):
-        return "LogPropertyImportData <{}, {}, {}>".format(self.name, self.property_type, self.unit)
+        return "PropertyImportData <{}, {}, {}>".format(self.name, self.property_type, self.unit)
 
     def __str__(self):
         return "{} [{}]: {}".format(self.name, "-" if self.unit == "" else self.unit, self.property_type)
@@ -70,24 +69,30 @@ class LogPropertyImportData:
             raise IndexError("Index out of bound ({}). Possible values are 0 and 1!".format(index))
 
 
-class LogPropertyImportModel(QAbstractTableModel):
-    """
-        Derived Table Model for the storage of UnitConstructionData
-        """
+class LogImportData(PropertyImportData):
+    def __init__(self, name: str = "", unit: str = ""):
+        super().__init__(name, PropertyTypes.FLOAT, unit)
 
-    def __init__(self, parent: QWidget = None, *args) -> None:
+
+class PropertyImportModel(QAbstractTableModel):
+    """
+    Derived Table Model for the storage of UnitConstructionData
+    """
+
+    def __init__(self, only_numbers: bool = False, parent: QWidget = None, *args) -> None:
         """
         Initialize the object
-        :param data: import data
+        :param only_numbers: show only number rows and don't display type column
         """
         # noinspection PyArgumentList
         QAbstractTableModel.__init__(self, parent, *args)
-        self.__data_list: List[LogPropertyImportData] = list()
-        self.__header_labels = ["Property", "Type"]
-        self.logger = QGISLogHandler("LogPropertyImportModel")
+        self.__only_numbers = only_numbers
+        self.__data_list: List[PropertyImportData] = list()
+        self.__header_labels = ["Property"] if only_numbers else ["Property", "Type"]
+        self.logger = QGISLogHandler(self.__class__.__name__)
 
     # noinspection PyMethodOverriding
-    def add(self, data: LogPropertyImportData) -> bool:
+    def add(self, data: PropertyImportData) -> bool:
         """
         adds a new row at the end of the model.
         :param row: row index where to insert the new row
@@ -130,7 +135,7 @@ class LogPropertyImportModel(QAbstractTableModel):
             return QVariant(self.__data_list[index.row()][index.column()])
         elif index.column() == 0 and role == Qt.TextAlignmentRole:
             return Qt.AlignLeft
-        elif index.column() == 1 and role == Qt.TextAlignmentRole:
+        elif index.column() == 1 and role == Qt.TextAlignmentRole and not self.__only_numbers:
             return Qt.AlignRight
         return QVariant()
 
@@ -144,7 +149,7 @@ class LogPropertyImportModel(QAbstractTableModel):
         if not index.isValid():
             return Qt.ItemIsEnabled
 
-        if index.column() == 1:
+        if index.column() == 1 and not self.__only_numbers:
             return Qt.ItemIsEditable | super(QAbstractTableModel, self).flags(index)
 
         return super(QAbstractTableModel, self).flags(index)
@@ -163,7 +168,7 @@ class LogPropertyImportModel(QAbstractTableModel):
         return super(QAbstractTableModel, self).headerData(section, orientation, role)
 
     # noinspection PyMethodOverriding
-    def insertRow(self, row: int, data: LogPropertyImportData) -> bool:
+    def insertRow(self, row: int, data: PropertyImportData) -> bool:
         """
         inserts a new row into the model. Derived and adapted function.
         :param row: row index where to insert the new row
@@ -193,10 +198,10 @@ class LogPropertyImportModel(QAbstractTableModel):
         self.endRemoveRows()
         return False
 
-    def row(self, index: int) -> LogPropertyImportData or None:
+    def row(self, index: int) -> PropertyImportData or None:
         """
-        returns LogPropertyImportData-item at given index
-        :param index: index of requested LogPropertyImportData-item
+        returns PropertyImportData-item at given index
+        :param index: index of requested PropertyImportData-item
         :return: returns the item at given index
         """
         if 0 <= index < self.rowCount():
@@ -221,7 +226,7 @@ class LogPropertyImportModel(QAbstractTableModel):
         """
         if not index.isValid():
             return False
-        if role == Qt.EditRole and index.column() == 1:
+        if role == Qt.EditRole and index.column() == 1 and not self.__only_numbers:
             if str(value).lower() == "integer":
                 self.__data_list[index.row()].property_type = PropertyTypes.INT
             elif str(value).lower() == "float":
@@ -237,19 +242,33 @@ class LogPropertyImportModel(QAbstractTableModel):
         return True
 
 
-class LogPropertyImportDelegate(QStyledItemDelegate):
+class LogImportModel(PropertyImportModel):
+    """
+    Derived Table Model for the storage of LogData
+    """
+
+    def __init__(self, parent: QWidget = None, *args) -> None:
+        """
+        Initialize the object
+        """
+        super().__init__(True, parent, *args)
+
+
+class PropertyImportDelegate(QStyledItemDelegate):
     """
     Derived delegate class for drawing the UnitConstructionModel
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, only_numbers: bool = False, *args, **kwargs):
         """
         Initialize the object
+        :param only_numbers: show only number rows and don't display type column
         :param args: arguments for initialization of the base class
         :param kwargs: arguments for initialization of the base class
         """
         super().__init__(*args, **kwargs)
-        self.logger = QGISLogHandler("LogPropertyImportModel")
+        self.__only_numbers = only_numbers
+        self.logger = QGISLogHandler(self.__class__.__name__)
 
     def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex) -> QWidget:
         """
@@ -260,7 +279,7 @@ class LogPropertyImportDelegate(QStyledItemDelegate):
         :return: QWidget which represents the editor for the given model index
         """
         if index.isValid():
-            if index.column() == 1:
+            if index.column() == 1 and not self.__only_numbers:
                 combobox = QComboBox(parent)
                 combobox.addItems(["Integer", "Float", "String"])
                 combobox.setFocusPolicy(Qt.StrongFocus)
@@ -274,7 +293,7 @@ class LogPropertyImportDelegate(QStyledItemDelegate):
         :param index: model index from which the editor data has to be set
         :return: Nothing
         """
-        if index.isValid() and index.column() == 1:
+        if index.isValid() and index.column() == 1 and not self.__only_numbers:
             if index.data() != "":
                 editor.setCurrentText(index.data())
             else:
@@ -292,7 +311,7 @@ class LogPropertyImportDelegate(QStyledItemDelegate):
         """
         self.logger.debug("Updating model data for index [{}, {}]: {}".
                           format(index.column(), index.row(), editor.currentText()))
-        if index.isValid() and index.column() == 1:  # only type can is editable
+        if index.isValid() and index.column() == 1 and not self.__only_numbers:  # only type can is editable
             model.setData(index, editor.currentText())
             return
         super().setModelData(editor, model, index)
@@ -352,3 +371,17 @@ class LogPropertyImportDelegate(QStyledItemDelegate):
         #     size.setWidth(size.width() + 5)
         #     return size
         return super().sizeHint(option, index)
+
+
+class LogImportDelegate(PropertyImportDelegate):
+    """
+    Derived delegate class for drawing the LogImport
+    """
+
+    def __init__(self, *args, **kwargs):
+        """
+        Initialize the object
+        :param args: arguments for initialization of the base class
+        :param kwargs: arguments for initialization of the base class
+        """
+        super().__init__(True, *args, **kwargs)

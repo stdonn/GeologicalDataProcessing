@@ -10,6 +10,7 @@ from datetime import datetime
 from enum import Enum
 
 # noinspection PyUnresolvedReferences
+from qgis.core import Qgis, QgsMessageLog
 from qgis.gui import QgisInterface
 
 import GeologicalDataProcessing.config as config
@@ -20,6 +21,31 @@ class LogLevel(Enum):
     WARNING = 1,
     CRITICAL = 2,
     DEBUG = 3
+
+
+def push_to_qgislogging(title: str, text: str = None, level: LogLevel = LogLevel.INFO) -> None:
+    """
+    Writes the text to QGIS Logging
+    :param title: message title
+    :param text: message to write to the QGIS messagelog
+    :param level: QGIS message level (standard: 0 -> QgsMessageLog.INFO)
+    :return: Nothing
+    """
+    if level == LogLevel.DEBUG:
+        return
+
+    loglevel = Qgis.Info
+    if level == LogLevel.WARNING:
+        loglevel = Qgis.Warning
+    elif level == LogLevel.CRITICAL:
+        loglevel = Qgis.Critical
+
+    if text is not None:
+        msg = "{} - {}".format(text, title)
+    else:
+        msg = title
+    QgsMessageLog().logMessage(msg, tag="GeologicalDataProcessing", level=loglevel,
+                               notifyUser=True)
 
 
 class QGISLogHandler:
@@ -99,17 +125,21 @@ class QGISLogHandler:
                 # level == LogLevel.DEBUG => do nothing
                 pass
 
-    def push_message(self, title: str, text: str = None, level: LogLevel = LogLevel.INFO, only_logfile: bool = False):
+    def push_message(self, title: str, text: str = None, level: LogLevel = LogLevel.INFO, only_logfile: bool = False,
+                     to_messagebar: bool = False):
         """
         :param title: message title
         :param text: message to write to the QGIS messagebar / messagelog
         :param level: QGIS message level (standard: 0 -> QgsMessageLog.INFO)
         :param only_logfile: Don't write output to QGIS interface, even if it is set
+        :param to_messagebar: Notify user with messagebar notification
         :return: Nothing
         """
         if self.__to_file:
             self.__push_to_logfile(title, text, level)
-        if (self.__iface is not None) and not only_logfile:
+        if not only_logfile:
+            push_to_qgislogging(title, text, level)
+        if (self.__iface is not None) and to_messagebar:
             self.__push_to_qgis(title, text, level)
 
     def debug(self, title: str, text: str = None) -> None:
@@ -121,35 +151,41 @@ class QGISLogHandler:
         """
         self.push_message(title=title, text=text, level=LogLevel.DEBUG)
 
-    def error(self, title: str, text: str = None, only_logfile: bool = False) -> None:
+    def error(self, title: str, text: str = None, only_logfile: bool = False, to_messagebar: bool = False) -> None:
         """
         Log an error message
         :param title: title to be logged
         :param text: text to be logged
         :param only_logfile: Don't write output to QGIS interface, even if it is set
+        :param to_messagebar: Notify user with messagebar notification
         :return: Nothing
         """
-        self.push_message(title=title, text=text, level=LogLevel.CRITICAL, only_logfile=only_logfile)
+        self.push_message(title=title, text=text, level=LogLevel.CRITICAL, only_logfile=only_logfile,
+                          to_messagebar=to_messagebar)
 
-    def info(self, title: str, text: str = None, only_logfile: bool = False) -> None:
+    def info(self, title: str, text: str = None, only_logfile: bool = False, to_messagebar: bool = False) -> None:
         """
         Log an info message
         :param title: title to be logged
         :param text: text to be logged
         :param only_logfile: Don't write output to QGIS interface, even if it is set
+        :param to_messagebar: Notify user with messagebar notification
         :return: Nothing
         """
-        self.push_message(title=title, text=text, level=LogLevel.INFO, only_logfile=only_logfile)
+        self.push_message(title=title, text=text, level=LogLevel.INFO, only_logfile=only_logfile,
+                          to_messagebar=to_messagebar)
 
-    def warn(self, title: str, text: str = None, only_logfile: bool = False) -> None:
+    def warn(self, title: str, text: str = None, only_logfile: bool = False, to_messagebar: bool = False) -> None:
         """
         Log a warning message
         :param title: title to be logged
         :param text: text to be logged
         :param only_logfile: Don't write output to QGIS interface, even if it is set
+        :param to_messagebar: Notify user with messagebar notification
         :return: Nothing
         """
-        self.push_message(title=title, text=text, level=LogLevel.WARNING, only_logfile=only_logfile)
+        self.push_message(title=title, text=text, level=LogLevel.WARNING, only_logfile=only_logfile,
+                          to_messagebar=to_messagebar)
 
     # setter and getter
     @property

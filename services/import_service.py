@@ -5,19 +5,16 @@ module to provide the import service
 
 import inspect
 import os
-
-from typing import Dict, List, Tuple
-
 from qgis.core import QgsCoordinateReferenceSystem
-
-from PyQt5.QtCore import pyqtSignal, QObject
-from PyQt5.QtWidgets import QFileDialog
+from typing import Dict, List, Tuple
 
 from GeologicalDataProcessing.geological_data_processing import GeologicalDataProcessingDockWidget
 from GeologicalDataProcessing.miscellaneous.config_handler import ConfigHandler
 from GeologicalDataProcessing.miscellaneous.exception_handler import ExceptionHandler
-from GeologicalDataProcessing.miscellaneous.qgis_log_handler import QGISLogHandler
 from GeologicalDataProcessing.miscellaneous.helper import get_file_name
+from GeologicalDataProcessing.miscellaneous.qgis_log_handler import QGISLogHandler
+from PyQt5.QtCore import pyqtSignal, QObject
+from PyQt5.QtWidgets import QFileDialog
 
 
 class ImportService(QObject):

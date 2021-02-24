@@ -292,7 +292,7 @@ class GeologicalDataProcessing:
                 from GeologicalDataProcessing.controller.database_controller import DatabaseController
                 from GeologicalDataProcessing.services.import_service import ImportService
                 from GeologicalDataProcessing.views.import_views import LineImportView, PointImportView, \
-                    WellImportView, PropertyImportView
+                    WellImportView, PropertyImportView, WellLogImportView
 
                 ImportService.get_instance(self.dockwidget)
 
@@ -313,6 +313,7 @@ class GeologicalDataProcessing:
                 self.__views["import_lines"] = LineImportView(self.dockwidget)
                 self.__views["import_wells"] = WellImportView(self.dockwidget)
                 self.__views["import_properties"] = PropertyImportView(self.dockwidget)
+                self.__views["import_well_logs"] = WellLogImportView(self.dockwidget)
 
                 self.__db_controller = DatabaseController(self.settings_dialog)
 

@@ -5,20 +5,19 @@ This module defines views for import processing
 
 from enum import IntEnum, unique
 from typing import Dict, List
-from PyQt5.QtCore import pyqtSignal, QObject, QThread
-from PyQt5.QtWidgets import QComboBox, QTableView, QHeaderView
 
 from GeologicalDataProcessing.controller.import_controller import PointImportController, LineImportController, \
-    WellImportController, PropertyImportController
+    WellImportController, PropertyImportController, ImportControllersInterface, WellLogImportController
 from GeologicalDataProcessing.geological_data_processing_dockwidget import GeologicalDataProcessingDockWidget
-from GeologicalDataProcessing.models.log_model import LogPropertyImportModel, LogPropertyImportDelegate, \
-    LogPropertyImportData
-from GeologicalDataProcessing.services.import_service import ImportService
-
+from GeologicalDataProcessing.miscellaneous.exception_handler import ExceptionHandler
+from GeologicalDataProcessing.miscellaneous.helper import diff
 # miscellaneous
 from GeologicalDataProcessing.miscellaneous.qgis_log_handler import QGISLogHandler
-from GeologicalDataProcessing.miscellaneous.helper import diff
-from GeologicalDataProcessing.miscellaneous.exception_handler import ExceptionHandler
+from GeologicalDataProcessing.models.log_model import PropertyImportModel, PropertyImportDelegate, \
+    PropertyImportData, LogImportModel, LogImportDelegate, LogImportData
+from GeologicalDataProcessing.services.import_service import ImportService
+from PyQt5.QtCore import pyqtSignal, QObject
+from PyQt5.QtWidgets import QComboBox, QTableView, QHeaderView
 from geological_toolbox.properties import PropertyTypes
 
 
@@ -42,7 +41,7 @@ class ImportViewInterface(QObject):
         :param dock_widget: current GeologicalDataProcessingDockWidget instance
         """
 
-        self.logger = QGISLogHandler(ImportViewInterface.__name__)
+        self.logger = QGISLogHandler(self.__class__.__name__)
         self.__combos = dict()
         self._dwg = dock_widget
 
@@ -52,9 +51,10 @@ class ImportViewInterface(QObject):
         self._import_service.import_columns_changed.connect(self._on_import_columns_changed)
 
         self._table_view: QTableView or None = None
-        self._table_model: LogPropertyImportModel = LogPropertyImportModel()
+        self._only_number_in_table_view: bool = False
+        self._table_model: PropertyImportModel = PropertyImportModel()
         self._dwg.start_import_button.clicked.connect(self._on_start_import)
-        self._controller_thread: QThread or None = None
+        self._controller_thread: ImportControllersInterface or None = None
 
         super().__init__()
 
@@ -110,7 +110,10 @@ class ImportViewInterface(QObject):
         self._table_view = widget
         self._table_view.setModel(self._table_model)
 
-        self._table_view.setItemDelegate(LogPropertyImportDelegate())
+        if self._only_number_in_table_view:
+            self._table_view.setItemDelegate(LogImportDelegate())
+        else:
+            self._table_view.setItemDelegate(PropertyImportDelegate())
         # self._table_view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         # self._table_view.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         self._table_view.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
@@ -149,7 +152,10 @@ class ImportViewInterface(QObject):
             self.logger.debug("No list widget specified for additional columns")
             return
 
-        cols = diff(self._import_service.selectable_columns, selection_list)
+        if self._only_number_in_table_view:
+            cols = diff(self._import_service.number_columns, selection_list)
+        else:
+            cols = diff(self._import_service.selectable_columns, selection_list)
 
         self.logger.debug("selectable_columns: " + str(self._import_service.selectable_columns))
         self.logger.debug("selected_cols: " + str(selection_list))
@@ -163,7 +169,7 @@ class ImportViewInterface(QObject):
         self._table_model.clear()
         for col in cols:
             property_type = PropertyTypes.FLOAT if col in self._import_service.number_columns else PropertyTypes.STRING
-            self._table_model.add(LogPropertyImportData(name=col[0], unit=col[1], property_type=property_type))
+            self._table_model.add(PropertyImportData(name=col[0], unit=col[1], property_type=property_type))
 
     def _on_import_columns_changed(self) -> None:
         """
@@ -182,10 +188,16 @@ class ImportViewInterface(QObject):
     def _on_import_failed(self, msg: str) -> None:
         self.logger.debug("(Interface) _on_import_failed")
         self.__import_finished()
-        self.logger.error("Import failed", msg)
+        self.logger.error("Import failed", msg, to_messagebar=True)
+
+    def _on_import_finished_with_warnings(self, msg: str) -> None:
+        self.logger.debug("(Interface) _on_import_finished_with_warnings")
+        self.logger.warn("Import finished with warnings", msg, to_messagebar=True)
+        self.__import_finished()
 
     def _on_import_successful(self):
         self.logger.debug("(Interface) _on_import_successful")
+        self.logger.info("Import successful", to_messagebar=True)
         self.__import_finished()
 
     def _on_cancel_import(self):
@@ -278,7 +290,7 @@ class ImportViewInterface(QObject):
         """
         [self.set_combobox_data(name, []) for name in self.get_names()]
 
-    def get_property_columns(self) -> List[LogPropertyImportData]:
+    def get_property_columns(self) -> List[PropertyImportData]:
         selection = set([x.row() for x in self._table_view.selectedIndexes()])
         self.logger.debug("selected rows indices: {}".format(selection))
         erg = [self._table_model.row(x) for x in selection]
@@ -319,12 +331,14 @@ class ImportViewInterface(QObject):
     def _connect_thread(self):
         self._controller_thread.import_finished.connect(self._on_import_successful)
         self._controller_thread.import_failed.connect(self._on_import_failed)
+        self._controller_thread.import_finished_with_warnings.connect(self._on_import_finished_with_warnings)
         self._controller_thread.update_progress.connect(self._update_progress_bar)
         self._dwg.cancel_import.clicked.connect(self._on_cancel_import)
 
     def _disconnect_thread(self):
         self._controller_thread.import_finished.disconnect(self._on_import_successful)
         self._controller_thread.import_failed.disconnect(self._on_import_failed)
+        self._controller_thread.import_finished_with_warnings.disconnect(self._on_import_finished_with_warnings)
         self._controller_thread.update_progress.disconnect(self._update_progress_bar)
         self._dwg.cancel_import.clicked.disconnect(self._on_cancel_import)
 
@@ -340,8 +354,6 @@ class PointImportView(ImportViewInterface):
         :param dwg: current GeologicalDataProcessingDockWidget instance
         """
         super().__init__(dwg)
-        self.logger = QGISLogHandler(PointImportView.__name__)
-
         self.table_view = self._dwg.import_columns_points
 
         # summarize import_tests Widgets
@@ -422,8 +434,6 @@ class LineImportView(ImportViewInterface):
         :param dwg: current GeologicalDataProcessingDockWidget instance
         """
         super().__init__(dwg)
-        self.logger = QGISLogHandler(LineImportView.__name__)
-
         self.table_view = self._dwg.import_columns_lines
 
         # summarize import_tests Widgets
@@ -505,7 +515,6 @@ class WellImportView(ImportViewInterface):
         :param dwg: current GeologicalDataProcessingDockWidget instance
         """
         super().__init__(dwg)
-        self.logger = QGISLogHandler(WellImportView.__name__)
 
         # summarize import_tests Widgets
         # noinspection SpellCheckingInspection
@@ -591,8 +600,6 @@ class PropertyImportView(ImportViewInterface):
         :param dwg: current GeologicalDataProcessingDockWidget instance
         """
         super().__init__(dwg)
-        self.logger = QGISLogHandler(PropertyImportView.__name__)
-
         self.table_view = self._dwg.values_props
 
         # summarize import_tests Widgets
@@ -642,5 +649,80 @@ class PropertyImportView(ImportViewInterface):
 
         self.logger.debug("starting import...")
         self._controller_thread = PropertyImportController(data, selection, self.get_property_columns())
+        self._connect_thread()
+        self._controller_thread.start()
+
+
+class WellLogImportView(ImportViewInterface):
+    """
+    viewer class for well log import procedure
+    """
+
+    def __init__(self, dwg: GeologicalDataProcessingDockWidget) -> None:
+        """
+        Initialize the view
+        :param dwg: current GeologicalDataProcessingDockWidget instance
+        """
+        super().__init__(dwg)
+        self._table_model = LogImportModel()
+
+        self.table_view = self._dwg.values_logs
+        self._only_number_in_table_view = True
+
+        # summarize import_tests Widgets
+        # noinspection SpellCheckingInspection
+        self.combobox_names = {
+            "well_name": self._dwg.well_name_logs,
+            "depth": self._dwg.depth_logs
+        }
+
+    def _on_import_columns_changed(self) -> None:
+        """
+        change the import columns
+        :return: Nothing
+        """
+        self.logger.debug("_on_import_columns_changed")
+
+        self._disconnect_selection_changed()
+
+        try:
+            well_selection = 0
+            depth_selection = 0
+            for i in range(len(self._import_service.selectable_columns)):
+                if "name" in self._import_service.selectable_columns[i][0].lower():
+                    well_selection = i
+                    break
+            for i in range(len(self._import_service.number_columns)):
+                if "depth" in self._import_service.number_columns[i][0].lower():
+                    depth_selection = i
+                    break
+            self.set_combobox_data("well_name", [x[0] for x in self._import_service.selectable_columns], well_selection)
+            self.set_combobox_data("depth", [x[0] for x in self._import_service.number_columns], depth_selection)
+        except Exception as e:
+            self.logger.error("Error", str(ExceptionHandler(e)))
+            self._import_service.reset()
+
+        super()._on_import_columns_changed()
+
+    def _on_start_import(self) -> None:
+        """
+        point import requested
+        :return: Nothing
+        """
+        self.logger.debug("_on_start_import")
+        super()._on_start_import()
+
+        if self.dockwidget.import_type.currentIndex() != ViewTabs.WELL_LOGS:
+            self.logger.debug("currentIndex != ViewTabs.WELL_LOGS [{}]", self.dockwidget.import_type.currentIndex())
+            return
+
+        data = self._import_service.read_import_file()
+
+        selection = dict()
+        selection["well_name"] = self.combobox_data("well_name")
+        selection["depth"] = self.combobox_data("depth")
+
+        self.logger.debug("starting import...")
+        self._controller_thread = WellLogImportController(data, selection, self.get_property_columns())
         self._connect_thread()
         self._controller_thread.start()
